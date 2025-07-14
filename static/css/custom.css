@@ -1,0 +1,487 @@
+/* Custom styles for AAA Performance Tracker */
+
+/* Card hover effects */
+.card {
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Rating button styles */
+.rating-group .btn-check:checked + .btn {
+    transform: scale(1.02);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Progress bar animations */
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Badge styles */
+.badge {
+    font-weight: 500;
+}
+
+/* Form enhancements */
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Button hover effects */
+.btn {
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Table enhancements */
+.table-hover tbody tr:hover {
+    background-color: var(--bs-secondary-bg);
+}
+
+/* Table sorting styles */
+.sortable-header {
+    position: relative;
+    transition: background-color 0.15s ease;
+}
+
+.sortable-header:hover {
+    background-color: var(--bs-primary-bg-subtle) !important;
+}
+
+.sortable-header.sort-asc,
+.sortable-header.sort-desc {
+    background-color: var(--bs-primary-bg-subtle) !important;
+}
+
+.sort-indicator {
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.sortable-header:hover .sort-indicator i {
+    color: var(--bs-primary) !important;
+}
+
+/* Smooth row transitions during sorting */
+tbody {
+    transition: opacity 0.15s ease;
+}
+
+/* No-sort columns styling */
+.no-sort {
+    cursor: default !important;
+}
+
+.no-sort:hover {
+    background-color: inherit !important;
+}
+
+/* Accordion customizations */
+.accordion-button:not(.collapsed) {
+    background-color: var(--bs-primary-bg-subtle);
+    border-color: var(--bs-primary-border-subtle);
+}
+
+/* Navbar customizations */
+.navbar-brand {
+    font-size: 1.5rem;
+}
+
+/* Footer positioning */
+footer {
+    margin-top: auto;
+}
+
+/* Custom spacing utilities */
+.py-6 {
+    padding-top: 4rem !important;
+    padding-bottom: 4rem !important;
+}
+
+/* Card title icons */
+.card-title i {
+    color: var(--bs-primary);
+}
+
+/* Rating scale visual improvements */
+.rating-group label {
+    font-size: 0.9rem;
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.75rem;
+}
+
+/* Assessment status indicators */
+.border-success {
+    border-color: var(--bs-success) !important;
+    border-width: 2px !important;
+}
+
+.border-warning {
+    border-color: var(--bs-warning) !important;
+    border-width: 2px !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .rating-group .btn {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+        min-height: 2.5rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        border: none;
+    }
+}
+
+/* Dark theme specific adjustments */
+[data-bs-theme="dark"] .card {
+    background-color: var(--bs-dark);
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.075);
+}
+
+[data-bs-theme="dark"] .border {
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Loading states */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.65;
+}
+
+.btn.loading::after {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.5rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-loading-spinner 0.75s linear infinite;
+}
+
+@keyframes btn-loading-spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Ultra-Modern Clean Design - 2025 */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #fafbfc;
+    color: #1a1a1a;
+    line-height: 1.6;
+}
+
+/* Override Bootstrap dark theme remnants */
+.navbar-light .navbar-brand {
+    color: #667eea !important;
+}
+
+.navbar-light .navbar-nav .nav-link {
+    color: #495057 !important;
+}
+
+.navbar-light .navbar-nav .nav-link:hover {
+    color: #667eea !important;
+}
+
+.text-primary {
+    color: #667eea !important;
+}
+
+.modern-container {
+    background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 100%);
+    min-height: 100vh;
+}
+
+/* Modern Card Design */
+.modern-card {
+    background: white;
+    border: 1px solid #e8ecef;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    border-color: #d1d9e0;
+}
+
+.modern-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    position: relative;
+}
+
+.modern-header h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.modern-header p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin: 0.5rem 0 0 0;
+}
+
+/* Clean Table Design */
+.clean-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e8ecef;
+}
+
+.clean-table .table {
+    margin-bottom: 0;
+    border: none;
+}
+
+.clean-table .table th {
+    background: #f8f9fa;
+    border: none;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.clean-table .table td {
+    background: white;
+    border: none;
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+    color: #495057;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.clean-table .table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Modern Badges */
+.clean-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+}
+
+.badge-rating {
+    background: #e3f2fd !important;
+    color: #1565c0 !important;
+}
+
+.badge-text {
+    background: #f3e5f5 !important;
+    color: #7b1fa2 !important;
+}
+
+.badge-essay {
+    background: #fff3e0 !important;
+    color: #ef6c00 !important;
+}
+
+.badge-required {
+    background: #e8f5e8 !important;
+    color: #2e7d32 !important;
+}
+
+.badge-optional {
+    background: #f5f5f5 !important;
+    color: #616161 !important;
+}
+
+.badge-active {
+    background: #e8f5e8 !important;
+    color: #2e7d32 !important;
+}
+
+.badge-inactive {
+    background: #ffebee !important;
+    color: #c62828 !important;
+}
+
+/* Modern Buttons */
+.clean-btn {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.clean-btn:hover {
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.btn-clean-primary {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.btn-clean-primary:hover {
+    background: #5a6fd8;
+    border-color: #5a6fd8;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-clean-success {
+    background: #51cf66;
+    border-color: #51cf66;
+    color: white;
+}
+
+.btn-clean-success:hover {
+    background: #40c057;
+    border-color: #40c057;
+    color: white;
+    box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
+}
+
+.btn-clean-light {
+    background: white;
+    border-color: #dee2e6;
+    color: #495057;
+}
+
+.btn-clean-light:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    color: #495057;
+}
+
+.btn-clean-danger {
+    background: white;
+    border-color: #f8d7da;
+    color: #dc3545;
+}
+
+.btn-clean-danger:hover {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+/* Header Section */
+.page-header {
+    background: white;
+    border: 1px solid #e8ecef;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.page-header h1 {
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+.page-header p {
+    color: #6c757d;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.page-header .text-accent {
+    color: #667eea !important;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #adb5bd;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .modern-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .clean-table .table th,
+    .clean-table .table td {
+        padding: 0.75rem;
+    }
+}

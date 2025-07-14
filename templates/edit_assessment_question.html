@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Question - AAA Performance Tracker{% endblock %}
+
+{% block extra_head %}
+<!-- Bootstrap Datepicker CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Edit Question in "{{ assessment_form.title }}"</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="questionForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.question_name.label(class="form-label") }}
+                            {{ form.question_name(class="form-control") }}
+                            {% if form.question_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_name.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">A clear, concise label for this question</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_text.label(class="form-label") }}
+                            {{ form.question_text(class="form-control") }}
+                            {% if form.question_text.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_text.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_type.label(class="form-label") }}
+                            {{ form.question_type(class="form-select", id="question_type", onchange="updateQuestionSettings()") }}
+                            {% if form.question_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_type.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_required(class="form-check-input") }}
+                                {{ form.is_required.label(class="form-check-label") }}
+                            </div>
+                        </div>
+
+                        <!-- Rating Scale Settings -->
+                        <div id="ratingSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Rating Scale Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.rating_min.label(class="form-label") }}
+                                            {{ form.rating_min(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.rating_max.label(class="form-label") }}
+                                            {{ form.rating_max(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ form.rating_labels.label(class="form-label") }}
+                                        {{ form.rating_labels(class="form-control") }}
+                                        <small class="form-text text-muted">One label per line, e.g., "1 - Poor"</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Multiple Choice/Checkbox/Dropdown Settings -->
+                        <div id="optionsSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Answer Options</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        {{ form.options.label(class="form-label") }}
+                                        {{ form.options(class="form-control") }}
+                                        <small class="form-text text-muted">One option per line</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Input Settings -->
+                        <div id="textSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Text Input Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.max_length.label(class="form-label") }}
+                                            {{ form.max_length(class="form-control", id="max_length") }}
+                                            <small class="form-text text-muted">
+                                                <span id="char-limit-help">Default: 500 for short text, 2000 for long text</span>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.placeholder.label(class="form-label") }}
+                                            {{ form.placeholder(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('edit_assessment_form', form_id=assessment_form.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Form
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Question
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Datepicker JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+<script>
+function updateQuestionSettings() {
+    const questionType = document.getElementById('question_type').value;
+    const ratingSettings = document.getElementById('ratingSettings');
+    const optionsSettings = document.getElementById('optionsSettings');
+    const textSettings = document.getElementById('textSettings');
+    const maxLengthField = document.getElementById('max_length');
+    const charLimitHelp = document.getElementById('char-limit-help');
+    
+    // Hide all settings initially
+    ratingSettings.style.display = 'none';
+    optionsSettings.style.display = 'none';
+    textSettings.style.display = 'none';
+    
+    // Show relevant settings based on question type
+    if (questionType === 'rating') {
+        ratingSettings.style.display = 'block';
+    } else if (['checkbox', 'dropdown', 'multiple_choice'].includes(questionType)) {
+        optionsSettings.style.display = 'block';
+    } else if (questionType === 'text' || questionType === 'textarea') {
+        textSettings.style.display = 'block';
+        
+        // Set smart defaults for character limits
+        if (questionType === 'text') {
+            if (!maxLengthField.value || maxLengthField.value === '2000') {
+                maxLengthField.value = '500';
+            }
+            charLimitHelp.textContent = 'Recommended: 500 characters for short text fields';
+        } else if (questionType === 'textarea') {
+            if (!maxLengthField.value || maxLengthField.value === '500') {
+                maxLengthField.value = '2000';
+            }
+            charLimitHelp.textContent = 'Recommended: 2000 characters for long text areas';
+        }
+    }
+}
+
+// Initialize date picker for date questions
+$(document).ready(function() {
+    $('.datepicker').datepicker({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true
+    });
+    
+    // Initialize settings display
+    updateQuestionSettings();
+});
+</script>
+{% endblock %}

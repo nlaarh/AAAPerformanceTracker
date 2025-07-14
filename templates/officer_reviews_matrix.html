@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}{{ officer.name }} - Performance Review Matrix{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">
+                <i class="fas fa-user-circle me-2 text-primary"></i>{{ officer.name }} - Performance Matrix
+            </h1>
+            <p class="text-muted mb-0">Overall Average: <strong>{{ overall_matrix_average }}/5</strong> | {{ total_reviewers }} Reviewers | AI-Powered Analysis</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/admin/export_matrix_pdf/{{ officer.id }}" 
+               class="btn btn-primary">
+                <i class="fas fa-file-pdf me-1"></i>Export PDF
+            </a>
+            <a href="/admin/export_matrix_excel/{{ officer.id }}" 
+               class="btn btn-success">
+                <i class="fas fa-file-excel me-1"></i>Export Excel
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+
+
+
+    <!-- Simple 2D Matrix -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if matrix_data and reviewers %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 18%; font-size: 0.9rem;">Question</th>
+                            {% for reviewer_id, reviewer in reviewers.items() %}
+                            <th class="text-center no-sort" style="width: 4%; font-size: 0.8rem;">
+                                <div style="transform: rotate(-45deg); white-space: nowrap; font-size: 0.7rem;">
+                                    {{ reviewer.name.split()[0] }}
+                                </div>
+                            </th>
+                            {% endfor %}
+                            <th class="text-center no-sort" style="width: 4%; font-size: 0.8rem;">Avg</th>
+                            <th class="no-sort" style="width: 62%; font-size: 0.9rem;">AI Analysis & Insights</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for question_data in matrix_data %}
+                        <tr>
+                            <td class="p-2" style="font-size: 0.85rem;">
+                                <div class="fw-bold" style="line-height: 1.2;">{{ question_data.question.question_text }}</div>
+                                <small class="text-primary fw-bold">
+                                    Q{{ loop.index }}
+                                </small>
+                            </td>
+                            
+                            {% for reviewer_id, reviewer in reviewers.items() %}
+                            <td class="text-center p-1">
+                                {% set response = question_data.responses.get(reviewer.name) %}
+                                {% if response and response.rating %}
+                                    {% if response.is_self_assessment %}
+                                        <span class="badge fs-6 fw-bold bg-info text-dark border border-dark" title="Self-Assessment">
+                                            {{ response.rating }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge fs-6 fw-bold
+                                            {% if response.rating >= 4 %}bg-success
+                                            {% elif response.rating >= 3 %}bg-primary
+                                            {% elif response.rating >= 2 %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ response.rating }}
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted fs-5">—</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            
+                            <td class="text-center p-1">
+                                {% if question_data.average_rating > 0 %}
+                                    <strong class="fs-5
+                                        {% if question_data.average_rating >= 4 %}text-success
+                                        {% elif question_data.average_rating >= 3 %}text-primary
+                                        {% elif question_data.average_rating >= 2 %}text-warning
+                                        {% else %}text-danger{% endif %}">
+                                        {{ question_data.average_rating }}
+                                    </strong>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="p-2">
+                                {% if question_data.ai_analysis %}
+                                <div class="text-dark" style="font-size: 0.9rem; line-height: 1.3;">
+                                    <i class="fas fa-brain text-info me-1"></i>
+                                    <strong>{{ question_data.ai_analysis.summary }}</strong>
+                                    {% if question_data.ai_analysis.themes %}
+                                    <div class="mt-2">
+                                        {% for theme in question_data.ai_analysis.themes[:4] %}
+                                        <span class="badge bg-info bg-opacity-10 text-info me-1 mb-1" style="font-size: 0.75rem;">{{ theme }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    {% if question_data.ai_analysis.sentiment %}
+                                    <div class="mt-1" style="font-size: 0.8rem;">
+                                        {% if question_data.ai_analysis.sentiment == 'positive' %}
+                                        <i class="fas fa-thumbs-up text-success me-1"></i><span class="text-success">Positive feedback</span>
+                                        {% elif question_data.ai_analysis.sentiment == 'negative' %}
+                                        <i class="fas fa-thumbs-down text-danger me-1"></i><span class="text-danger">Areas for growth</span>
+                                        {% else %}
+                                        <i class="fas fa-balance-scale text-warning me-1"></i><span class="text-warning">Mixed feedback</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted" style="font-size: 0.8rem;">AI analysis processing...</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Total Average Row -->
+                        <tr class="table-info border-top border-3">
+                            <td class="p-2" style="font-size: 0.85rem;">
+                                <div class="fw-bold">Total Average Score</div>
+                                <small class="text-primary fw-bold">Overall Performance</small>
+                            </td>
+                            
+                            {% for reviewer_id, reviewer in reviewers.items() %}
+                            <td class="text-center p-1">
+                                {% set reviewer_ratings = [] %}
+                                {% for question_data in matrix_data %}
+                                    {% set response = question_data.responses.get(reviewer.name) %}
+                                    {% if response and response.rating %}
+                                        {% set _ = reviewer_ratings.append(response.rating) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if reviewer_ratings %}
+                                    {% set reviewer_avg = (reviewer_ratings | sum / reviewer_ratings | length) | round(2) %}
+                                    <strong class="fs-4 fw-bold
+                                        {% if reviewer_avg >= 4 %}text-success
+                                        {% elif reviewer_avg >= 3 %}text-primary
+                                        {% elif reviewer_avg >= 2 %}text-warning
+                                        {% else %}text-danger{% endif %}">
+                                        {{ reviewer_avg }}
+                                    </strong>
+                                {% else %}
+                                    <span class="text-muted fs-5">—</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            
+                            <td class="text-center p-1">
+                                <strong class="fs-4 fw-bold
+                                    {% if overall_matrix_average >= 4 %}text-success
+                                    {% elif overall_matrix_average >= 3 %}text-primary
+                                    {% elif overall_matrix_average >= 2 %}text-warning
+                                    {% else %}text-danger{% endif %}">
+                                    {{ overall_matrix_average }}
+                                </strong>
+                            </td>
+                            
+                            <td class="p-2">
+                                <div class="small text-muted">
+                                    <i class="fas fa-chart-line me-1"></i>
+                                    Calculated from {{ matrix_data | length }} questions across {{ reviewers | length }} reviewers
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h5>No Review Data Available</h5>
+                <p class="text-muted">{{ officer.name }} has not received any performance reviews yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Overall AI Summary -->
+    {% if overall_ai_summary %}
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Overall Performance Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <p class="lead">{{ overall_ai_summary.executive_summary }}</p>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary">Major Themes</h6>
+                            <div class="mb-3">
+                                {% for theme in overall_ai_summary.major_themes %}
+                                <span class="badge bg-secondary me-1 mb-1">{{ theme }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                                <small><strong>Performance Level:</strong> 
+                                <span class="badge 
+                                    {% if overall_ai_summary.overall_sentiment == 'excellent' %}bg-success
+                                    {% elif overall_ai_summary.overall_sentiment == 'good' %}bg-primary
+                                    {% else %}bg-info{% endif %}">{{ overall_ai_summary.overall_sentiment|title }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

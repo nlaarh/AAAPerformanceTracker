@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Logs - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-history me-2"></i>System Activity Logs
+            </h2>
+            <p class="text-muted mb-0">Monitor and analyze all user activities across the system</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" onclick="exportLogs()">
+                <i class="fas fa-download me-1"></i>Export CSV
+            </button>
+            <button class="btn btn-outline-primary" onclick="refreshLogs()">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar text-primary fa-2x mb-2"></i>
+                    <h4 class="mb-0">{{ total_activities }}</h4>
+                    <small class="text-muted">Total Activities</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-day text-success fa-2x mb-2"></i>
+                    <h4 class="mb-0">{{ today_activities }}</h4>
+                    <small class="text-muted">Today's Activities</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-users text-info fa-2x mb-2"></i>
+                    <h4 class="mb-0">{{ unique_users_today }}</h4>
+                    <small class="text-muted">Active Users Today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-filter me-2"></i>Filter Activity Logs
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="user_id" class="form-label">User</label>
+                    <select name="user_id" id="user_id" class="form-select">
+                        <option value="">All Users</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if user_filter == user.id %}selected{% endif %}>
+                            {{ user.name }} ({{ user.role|title }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="action" class="form-label">Action Type</label>
+                    <select name="action" id="action" class="form-select">
+                        <option value="">All Actions</option>
+                        {% for action_type in action_types %}
+                        <option value="{{ action_type }}" {% if action_filter == action_type %}selected{% endif %}>
+                            {{ action_type|replace('_', ' ')|title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ date_to }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Filter
+                    </button>
+                    <a href="{{ url_for('admin_activity_logs') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Activity Logs Table -->
+    <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i>Activity Logs
+                {% if logs.total %}({{ logs.total }} total){% endif %}
+            </h5>
+            <small class="text-muted">Showing {{ logs.items|length }} of {{ logs.total }} entries</small>
+        </div>
+        <div class="card-body p-0">
+            {% if logs.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs.items %}
+                        <tr>
+                            <td>
+                                <div class="small">
+                                    <strong>{{ log.timestamp.strftime('%m/%d/%Y') }}</strong><br>
+                                    <span class="text-muted">{{ log.timestamp.strftime('%I:%M:%S %p') }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if log.user.role == 'admin' %}
+                                        <i class="fas fa-user-shield text-danger me-2"></i>
+                                    {% elif log.user.role == 'board_member' %}
+                                        <i class="fas fa-user-tie text-info me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-user text-success me-2"></i>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ log.user.name }}</strong><br>
+                                        <small class="text-muted">{{ log.user.role|title|replace('_', ' ') }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                {% if log.action == 'login' %}bg-success
+                                {% elif log.action == 'logout' %}bg-secondary
+                                {% elif log.action in ['user_create', 'user_update'] %}bg-primary
+                                {% elif log.action == 'password_change' %}bg-warning
+                                {% elif log.action in ['assessment_create', 'assessment_submit', 'start_evaluation', 'submit_evaluation'] %}bg-info
+                                {% elif log.action in ['view_dashboard', 'view_assessment', 'view_officer_reviews', 'view_reports'] %}bg-light text-dark
+                                {% else %}bg-secondary{% endif %}">
+                                    {{ log.action|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="small">{{ log.description }}</span>
+                            </td>
+                            <td>
+                                <code class="small">{{ log.ip_address or 'N/A' }}</code>
+                            </td>
+                            <td>
+                                <span class="small text-muted" title="{{ log.user_agent }}">
+                                    {% if log.user_agent %}
+                                        {% if 'Chrome' in log.user_agent %}
+                                            <i class="fab fa-chrome"></i> Chrome
+                                        {% elif 'Firefox' in log.user_agent %}
+                                            <i class="fab fa-firefox"></i> Firefox
+                                        {% elif 'Safari' in log.user_agent %}
+                                            <i class="fab fa-safari"></i> Safari
+                                        {% elif 'curl' in log.user_agent %}
+                                            <i class="fas fa-terminal"></i> API/CLI
+                                        {% else %}
+                                            <i class="fas fa-globe"></i> Other
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if logs.pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div class="small text-muted">
+                    Page {{ logs.page }} of {{ logs.pages }}
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if logs.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_activity_logs', page=logs.prev_num, user_id=user_filter, action=action_filter, date_from=date_from, date_to=date_to) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in logs.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != logs.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin_activity_logs', page=page_num, user_id=user_filter, action=action_filter, date_from=date_from, date_to=date_to) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if logs.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_activity_logs', page=logs.next_num, user_id=user_filter, action=action_filter, date_from=date_from, date_to=date_to) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>No Activity Logs Found</h5>
+                <p class="text-muted">Try adjusting your filters or check back later.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshLogs() {
+    window.location.reload();
+}
+
+function exportLogs() {
+    // Build export URL with current filters
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    
+    const exportUrl = '{{ url_for("admin_activity_logs") }}?' + params.toString();
+    window.open(exportUrl, '_blank');
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    if (document.hidden) return; // Don't refresh if tab is not active
+    
+    // Only refresh if no filters are applied (to avoid disrupting user's work)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('user_id') && !urlParams.has('action') && !urlParams.has('date_from') && !urlParams.has('date_to')) {
+        refreshLogs();
+    }
+}, 30000);
+</script>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.border-primary { border-color: #007bff !important; }
+.border-success { border-color: #28a745 !important; }
+.border-info { border-color: #17a2b8 !important; }
+
+code {
+    font-size: 0.875em;
+    color: #e83e8c;
+    background-color: #f8f9fa;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+}
+</style>
+{% endblock %}

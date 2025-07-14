@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-tachometer-alt me-2"></i>Board Member Dashboard
+                </h1>
+                <span class="badge bg-primary fs-6">{{ current_user.name }}</span>
+            </div>
+        </div>
+    </div>
+    
+    {% if assignments_by_period %}
+    {% for period, assignments in assignments_by_period.items() %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>{{ period.name }}
+                        </h5>
+                        <div>
+                            <small class="text-muted">{{ period.start_date.strftime('%m/%d/%Y') }} - {{ period.end_date.strftime('%m/%d/%Y') }}</small>
+                            {% set completed_assignments = assignments | selectattr('is_completed', 'equalto', true) | list %}
+                            <span class="badge bg-info ms-2">{{ completed_assignments|length }}/{{ assignments|length }} completed</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if period.description %}
+                    <p class="text-muted mb-3">{{ period.description }}</p>
+                    {% endif %}
+                    
+                    <div class="row g-3">
+                        {% for assignment in assignments %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card {% if assignment.is_completed %}border-success{% else %}border-warning{% endif %}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="card-title mb-0">{{ assignment.officer.name }}</h6>
+                                        {% if assignment.is_completed %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>Completed
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="card-text text-muted small">{{ assignment.officer.email }}</p>
+                                    
+                                    {% if assignment.is_completed and assignment.assessment %}
+                                        <div class="mb-3">
+                                            <small class="text-muted">Submitted: {{ assignment.completed_at.strftime('%B %d, %Y') }}</small><br>
+                                            <small class="text-muted">Overall Rating: {{ "%.1f"|format(assignment.assessment.overall_rating) }}/5.0</small>
+                                        </div>
+                                        <a href="{{ url_for('view_assessment', assessment_id=assignment.assessment.id) }}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View Assessment
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('evaluate_officer', officer_id=assignment.officer.id) }}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-star me-1"></i>Start Evaluation
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5>No Officers Available</h5>
+                    <p class="text-muted">There are currently no officers available for evaluation. Please contact your administrator.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Instructions Card -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Evaluation Instructions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Complete evaluations for all officers listed above</li>
+                        <li>Rate each officer across five key performance categories</li>
+                        <li>Provide detailed feedback in the text areas</li>
+                        <li>Submissions can be updated until the evaluation period closes</li>
+                        <li>Contact administration for any questions or technical support</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

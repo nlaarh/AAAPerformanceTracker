@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Create Review Assignments - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6">
+                <i class="fas fa-user-check me-3 text-primary"></i>Create Review Assignments
+            </h1>
+            <p class="text-muted mb-0">Select reviewers for each reviewee using the matrix below</p>
+        </div>
+        <div>
+            <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Periods
+            </a>
+        </div>
+    </div>
+
+    <!-- Period Info -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="card-title mb-1">
+                        <i class="fas fa-calendar-check me-2 text-success"></i>{{ period.name }}
+                    </h5>
+                    <p class="text-muted mb-0">
+                        {{ period.start_date.strftime('%B %d, %Y') }} - {{ period.end_date.strftime('%B %d, %Y') }}
+                        {% if period.description %} | {{ period.description }}{% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge {% if period.is_active %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                        {% if period.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="alert alert-info border-0 mb-4">
+        <div class="d-flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle fa-lg me-3"></i>
+            </div>
+            <div>
+                <h6 class="alert-heading">Assignment Matrix Instructions</h6>
+                <ul class="mb-0">
+                    <li><strong>Rows:</strong> People being reviewed (reviewees)</li>
+                    <li><strong>Columns:</strong> People doing the reviewing (reviewers)</li>
+                    <li><strong>Self-Assessment:</strong> Diagonal checkboxes are pre-selected for self-assessment</li>
+                    <li><strong>Selection:</strong> Check boxes to assign reviewers to reviewees</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Matrix -->
+    <form method="POST" id="assignmentForm">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>Assignment Matrix
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllSelf()">
+                            <i class="fas fa-user-check me-1"></i>Select All Self
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll()">
+                            <i class="fas fa-check-square me-1"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAll()">
+                            <i class="fas fa-times me-1"></i>Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover matrix-table mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="reviewee-header">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user me-2 text-success"></i>
+                                        <span>Reviewee</span>
+                                    </div>
+                                </th>
+                                {% for reviewer in reviewers %}
+                                <th class="reviewer-header text-center">
+                                    <div class="reviewer-name">
+                                        <i class="fas fa-user-tie me-1 text-info"></i>
+                                        <span>{{ reviewer.name }}</span>
+                                        <small class="d-block text-muted">{{ reviewer.role|title|replace('_', ' ') }}</small>
+                                    </div>
+                                </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reviewee in reviewees %}
+                            <tr>
+                                <td class="reviewee-cell">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-circle me-2 text-success"></i>
+                                        <div>
+                                            <strong>{{ reviewee.name }}</strong>
+                                            <small class="d-block text-muted">{{ reviewee.role|title|replace('_', ' ') }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% for reviewer in reviewers %}
+                                <td class="assignment-cell text-center">
+                                    {% set checkbox_name = "assignment_" + reviewee.id|string + "_" + reviewer.id|string %}
+                                    {% set is_self = (reviewee.id == reviewer.id) %}
+                                    {% set is_checked = existing_assignments.get(reviewee.id|string + "_" + reviewer.id|string, is_self) %}
+                                    
+                                    <div class="form-check d-inline-block">
+                                        <input 
+                                            class="form-check-input assignment-checkbox {% if is_self %}self-assessment{% endif %}" 
+                                            type="checkbox" 
+                                            name="{{ checkbox_name }}" 
+                                            id="{{ checkbox_name }}"
+                                            {% if is_checked %}checked{% endif %}
+                                            data-reviewee="{{ reviewee.id }}"
+                                            data-reviewer="{{ reviewer.id }}"
+                                            data-is-self="{{ is_self|lower }}"
+                                        >
+                                        <label class="form-check-label visually-hidden" for="{{ checkbox_name }}">
+                                            {{ reviewer.name }} reviews {{ reviewee.name }}
+                                        </label>
+                                    </div>
+                                    
+                                    {% if is_self %}
+                                    <div class="small text-success mt-1">
+                                        <i class="fas fa-user-check"></i>
+                                        <span class="d-none d-lg-inline">Self</span>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <span id="selectionCount">0</span> assignments selected
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary me-2" onclick="resetToDefaults()">
+                            <i class="fas fa-undo me-1"></i>Reset to Defaults
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Assignments
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Summary -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-users me-2 text-success"></i>Reviewees ({{ reviewees|length }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for reviewee in reviewees %}
+                        <div class="col-lg-6 mb-2">
+                            <small class="text-muted">{{ reviewee.name }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-user-tie me-2 text-info"></i>Reviewers ({{ reviewers|length }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for reviewer in reviewers %}
+                        <div class="col-lg-6 mb-2">
+                            <small class="text-muted">{{ reviewer.name }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Matrix functionality
+function updateSelectionCount() {
+    const checkedBoxes = document.querySelectorAll('.assignment-checkbox:checked');
+    document.getElementById('selectionCount').textContent = checkedBoxes.length;
+}
+
+function selectAllSelf() {
+    document.querySelectorAll('.self-assessment').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelectionCount();
+}
+
+function selectAll() {
+    document.querySelectorAll('.assignment-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelectionCount();
+}
+
+function clearAll() {
+    document.querySelectorAll('.assignment-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelectionCount();
+}
+
+function resetToDefaults() {
+    // Clear all first
+    clearAll();
+    // Then select self-assessments
+    selectAllSelf();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Update count on page load
+    updateSelectionCount();
+    
+    // Add event listeners to all checkboxes
+    document.querySelectorAll('.assignment-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectionCount);
+    });
+    
+    // Form validation
+    document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+        const checkedBoxes = document.querySelectorAll('.assignment-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one assignment before saving.');
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.matrix-table {
+    font-size: 0.9rem;
+}
+
+.matrix-table th,
+.matrix-table td {
+    vertical-align: middle;
+    border: 1px solid #dee2e6;
+}
+
+.reviewee-header {
+    background-color: #f8f9fa;
+    width: 200px;
+    min-width: 200px;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+}
+
+.reviewee-cell {
+    background-color: #f8f9fa;
+    width: 200px;
+    min-width: 200px;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    border-right: 2px solid #dee2e6;
+}
+
+.reviewer-header {
+    min-width: 120px;
+    writing-mode: horizontal-tb;
+}
+
+.reviewer-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.assignment-cell {
+    min-width: 120px;
+    width: 120px;
+    padding: 12px 8px;
+}
+
+.assignment-checkbox {
+    transform: scale(1.2);
+}
+
+.self-assessment {
+    accent-color: #28a745;
+}
+
+.form-check {
+    min-height: auto;
+}
+
+.sticky-top {
+    z-index: 1020;
+}
+
+@media (max-width: 768px) {
+    .reviewer-name span {
+        font-size: 0.8rem;
+    }
+    
+    .matrix-table {
+        font-size: 0.8rem;
+    }
+    
+    .assignment-cell {
+        min-width: 80px;
+        width: 80px;
+        padding: 8px 4px;
+    }
+    
+    .reviewee-cell {
+        width: 150px;
+        min-width: 150px;
+    }
+}
+
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.alert {
+    border-radius: 12px;
+}
+
+.btn {
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Console - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Admin Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="fas fa-cogs me-2 text-primary"></i>Admin Console
+                    </h1>
+                    <p class="text-muted mb-0">Comprehensive system administration and management</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('reviewer_dashboard') }}" class="btn btn-outline-info">
+                        <i class="fas fa-tasks me-1"></i>My Review Tasks
+                    </a>
+                    <a href="{{ url_for('export_csv') }}" class="btn btn-outline-success">
+                        <i class="fas fa-download me-1"></i>Export Data
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="assessment-tab" data-bs-toggle="tab" data-bs-target="#assessment-management" type="button" role="tab">
+                        <i class="fas fa-calendar-check me-2"></i>Assessment Management
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#user-management" type="button" role="tab">
+                        <i class="fas fa-users-cog me-2"></i>User Management
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="adminTabsContent">
+        <!-- Assessment Management Tab -->
+        <div class="tab-pane fade show active" id="assessment-management" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-calendar-plus me-2"></i>Assessment Period Management
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <a href="{{ url_for('create_assessment_period') }}" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-plus me-2"></i>Create New Assessment Period
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-primary btn-lg w-100">
+                                        <i class="fas fa-list me-2"></i>View All Periods
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Active Periods Quick View -->
+                            {% if active_periods %}
+                            <h6 class="mt-4 mb-3">Active Assessment Periods</h6>
+                            <div class="row">
+                                {% for period in active_periods %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ period.name }}</h6>
+                                            <p class="card-text small text-muted">
+                                                {{ period.start_date.strftime('%m/%d/%Y') }} - {{ period.end_date.strftime('%m/%d/%Y') }}
+                                            </p>
+                                            <div class="btn-group w-100" role="group">
+                                                <a href="{{ url_for('manage_assignments', period_id=period.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-users"></i> Manage
+                                                </a>
+                                                <a href="{{ url_for('period_progress', period_id=period.id) }}" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-chart-line"></i> Progress
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
+                                <h6>No Active Assessment Periods</h6>
+                                <p class="text-muted">Create your first assessment period to start organizing performance evaluations.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Overview Stats -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card text-center border-primary">
+                        <div class="card-body">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h3 class="card-title">{{ total_officers }}</h3>
+                            <p class="card-text text-muted">Officers</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-info">
+                        <div class="card-body">
+                            <i class="fas fa-user-tie fa-2x text-info mb-2"></i>
+                            <h3 class="card-title">{{ total_board_members }}</h3>
+                            <p class="card-text text-muted">Board Members</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-success">
+                        <div class="card-body">
+                            <i class="fas fa-clipboard-check fa-2x text-success mb-2"></i>
+                            <h3 class="card-title">{{ total_assessments }}</h3>
+                            <p class="card-text text-muted">Total Reviews</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-warning">
+                        <div class="card-body">
+                            <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                            <h3 class="card-title">{{ "%.1f"|format((total_assessments / (total_officers * total_board_members) * 100) if total_officers and total_board_members else 0) }}%</h3>
+                            <p class="card-text text-muted">Completion Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- User Management Tab -->
+        <div class="tab-pane fade" id="user-management" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-users-cog me-2"></i>User Account Management
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <a href="{{ url_for('create_user') }}" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-user-plus me-2"></i>Add New User
+                                    </a>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{{ url_for('manage_users') }}" class="btn btn-outline-primary btn-lg w-100">
+                                        <i class="fas fa-list me-2"></i>View All Users
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- User Statistics -->
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card text-center border-danger">
+                                        <div class="card-body">
+                                            <i class="fas fa-user-shield fa-2x text-danger mb-2"></i>
+                                            <h3 class="card-title">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h3>
+                                            <p class="card-text text-muted">Administrators</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center border-info">
+                                        <div class="card-body">
+                                            <i class="fas fa-user-tie fa-2x text-info mb-2"></i>
+                                            <h3 class="card-title">{{ users|selectattr('role', 'equalto', 'board_member')|list|length }}</h3>
+                                            <p class="card-text text-muted">Board Members</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center border-success">
+                                        <div class="card-body">
+                                            <i class="fas fa-user fa-2x text-success mb-2"></i>
+                                            <h3 class="card-title">{{ users|selectattr('role', 'equalto', 'officer')|list|length }}</h3>
+                                            <p class="card-text text-muted">Officers</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recent Users -->
+                            {% if recent_users %}
+                            <h6 class="mt-4 mb-3">Recently Added Users</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in recent_users %}
+                                        <tr>
+                                            <td>{{ user.name }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>
+                                                <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'board_member' %}bg-info{% else %}bg-success{% endif %}">
+                                                    {{ user.role|title|replace('_', ' ') }}
+                                                </span>
+                                            </td>
+                                            <td>{{ user.created_at.strftime('%m/%d/%Y') if user.created_at else 'N/A' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 20px;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    background-color: transparent;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+.border-primary { border-color: #007bff !important; }
+.border-success { border-color: #28a745 !important; }
+.border-info { border-color: #17a2b8 !important; }
+.border-warning { border-color: #ffc107 !important; }
+.border-danger { border-color: #dc3545 !important; }
+.border-secondary { border-color: #6c757d !important; }
+</style>
+{% endblock %}

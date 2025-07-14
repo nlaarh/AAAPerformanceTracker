@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Preview Survey Form - AAA Performance Tracker{% endblock %}
+
+{% block extra_head %}
+<!-- Bootstrap Datepicker CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">{{ survey_form.title }}</h1>
+                    <p class="text-muted">{{ survey_form.description }}</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('edit_survey_form', form_id=survey_form.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit Form
+                    </a>
+                    <a href="{{ url_for('survey_forms') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Forms
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Survey Preview</h5>
+                    <small class="text-muted">This is how the form will appear to users</small>
+                </div>
+                <div class="card-body">
+                    {% if questions %}
+                        <form>
+                            {% for question in questions %}
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">
+                                        {{ question.question_name }}
+                                        {% if question.is_required %}
+                                            <span class="text-danger">*</span>
+                                        {% endif %}
+                                    </label>
+                                    <div class="mb-2">{{ question.question_text }}</div>
+                                    
+                                    {% set settings = question.get_settings() %}
+                                    
+                                    {% if question.question_type == 'rating' %}
+                                        <div class="d-flex gap-3">
+                                            {% for i in range(settings.get('min_rating', 1), settings.get('max_rating', 5) + 1) %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="{{ i }}" disabled>
+                                                    <label class="form-check-label">{{ i }}</label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% if settings.get('labels') %}
+                                            <div class="mt-2">
+                                                {% for label in settings.get('labels') %}
+                                                    <small class="text-muted d-block">{{ label }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    
+                                    {% elif question.question_type == 'text' %}
+                                        <input type="text" class="form-control" 
+                                               placeholder="{{ settings.get('placeholder', '') }}" 
+                                               maxlength="{{ settings.get('max_length', 500) }}" 
+                                               disabled>
+                                    
+                                    {% elif question.question_type == 'textarea' %}
+                                        <textarea class="form-control" rows="3" 
+                                                  placeholder="{{ settings.get('placeholder', '') }}" 
+                                                  maxlength="{{ settings.get('max_length', 500) }}" 
+                                                  disabled></textarea>
+                                    
+                                    {% elif question.question_type == 'checkbox' %}
+                                        {% for option in settings.get('options', []) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="question_{{ question.id }}" value="{{ option }}" disabled>
+                                                <label class="form-check-label">{{ option }}</label>
+                                            </div>
+                                        {% endfor %}
+                                    
+                                    {% elif question.question_type == 'dropdown' %}
+                                        <select class="form-select" disabled>
+                                            <option>Select an option...</option>
+                                            {% for option in settings.get('options', []) %}
+                                                <option value="{{ option }}">{{ option }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    
+                                    {% elif question.question_type == 'multiple_choice' %}
+                                        {% for option in settings.get('options', []) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="{{ option }}" disabled>
+                                                <label class="form-check-label">{{ option }}</label>
+                                            </div>
+                                        {% endfor %}
+                                    
+                                    {% elif question.question_type == 'boolean' %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="true" disabled>
+                                            <label class="form-check-label">Yes</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="false" disabled>
+                                            <label class="form-check-label">No</label>
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'date' %}
+                                        <input type="date" class="form-control datepicker" 
+                                               name="question_{{ question.id }}" 
+                                               disabled>
+                                    
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                            
+                            <div class="pt-3 border-top">
+                                <button type="button" class="btn btn-primary" disabled>
+                                    <i class="fas fa-paper-plane"></i> Submit Survey
+                                </button>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="fas fa-info-circle"></i> This is a preview - the submit button is disabled
+                                </small>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No Questions in Form</h4>
+                            <p class="text-muted">Add questions to see the survey preview.</p>
+                            <a href="{{ url_for('add_survey_question', form_id=survey_form.id) }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Questions
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Datepicker JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script>
+// Initialize datepickers
+$(document).ready(function() {
+    $('.datepicker').datepicker({
+        format: 'yyyy-mm-dd',
+        todayHighlight: true,
+        autoclose: true
+    });
+});
+</script>
+{% endblock %}

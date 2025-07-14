@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}My Performance Review - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-user-circle me-2"></i>My Performance Review
+                </h1>
+                <span class="badge bg-info fs-6">{{ current_user.name }}</span>
+            </div>
+        </div>
+    </div>
+    
+    {% if assessments %}
+    <!-- Overall Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                    <h3 class="card-title">{{ overall_average }}/5.0</h3>
+                    <p class="card-text text-muted">Overall Average</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x text-info mb-2"></i>
+                    <h3 class="card-title">{{ assessments|length }}</h3>
+                    <p class="card-text text-muted">Assessments Received</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar fa-2x text-success mb-2"></i>
+                    <h3 class="card-title">{{ assessments[0].year }}</h3>
+                    <p class="card-text text-muted">Assessment Year</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Performance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Performance by Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if category_averages %}
+                    <div class="row g-3">
+                        {% for category_id, data in category_averages.items() %}
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="card-title mb-0">{{ data.category.name }}</h6>
+                                        <span class="badge {% if data.average >= 4 %}bg-success{% elif data.average >= 3 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                            {{ data.average }}/5.0
+                                        </span>
+                                    </div>
+                                    <p class="card-text text-muted small">{{ data.category.description }}</p>
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar {% if data.average >= 4 %}bg-success{% elif data.average >= 3 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ (data.average / 5 * 100)|round }}%"
+                                             aria-valuenow="{{ data.average }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="5">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Based on {{ data.count }} assessment{{ 's' if data.count != 1 else '' }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <h5>No Category Data Available</h5>
+                        <p class="text-muted">Category ratings will appear here once assessments are submitted.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Individual Assessments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>Individual Assessment Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="assessmentAccordion">
+                        {% for assessment in assessments %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                        <div>
+                                            <strong>Assessment by {{ assessment.reviewer.name }}</strong>
+                                            <br><small class="text-muted">{{ assessment.submitted_at.strftime('%B %d, %Y') }}</small>
+                                        </div>
+                                        <span class="badge {% if assessment.overall_rating and assessment.overall_rating >= 4 %}bg-success{% elif assessment.overall_rating and assessment.overall_rating >= 3 %}bg-warning{% elif assessment.overall_rating %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {% if assessment.overall_rating %}{{ "%.1f"|format(assessment.overall_rating) }}{% else %}N/A{% endif %}/5.0
+                                        </span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#assessmentAccordion">
+                                <div class="accordion-body">
+                                    <!-- Category Ratings -->
+                                    <h6 class="fw-bold mb-3">Category Ratings:</h6>
+                                    <div class="row g-2 mb-4">
+                                        {% for category_rating in assessment.category_ratings %}
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                                <span class="small">{{ category_rating.category.name }}</span>
+                                                <span class="badge bg-secondary">{{ category_rating.rating }}/5</span>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <!-- Text Feedback -->
+                                    {% if assessment.accomplishments %}
+                                    <div class="mb-3">
+                                        <h6 class="fw-bold text-success">Key Accomplishments:</h6>
+                                        <p class="text-muted">{{ assessment.accomplishments }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if assessment.improvement_opportunities %}
+                                    <div class="mb-3">
+                                        <h6 class="fw-bold text-warning">Areas for Improvement:</h6>
+                                        <p class="text-muted">{{ assessment.improvement_opportunities }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if assessment.focus_for_next_year %}
+                                    <div class="mb-3">
+                                        <h6 class="fw-bold text-info">Focus for Next Year:</h6>
+                                        <p class="text-muted">{{ assessment.focus_for_next_year }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- No Assessments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5>No Assessments Yet</h5>
+                    <p class="text-muted">Your performance assessments will appear here once board members submit their evaluations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

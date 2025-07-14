@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}360° Review Management - {{ period.name }}{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1>
+                            <i class="fas fa-users-cog me-3 text-accent"></i>360° Review Management
+                        </h1>
+                        <p>{{ period.name }}</p>
+                        <div class="d-flex align-items-center gap-3 mt-2">
+                            <span class="badge-rating clean-badge">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                {{ period.start_date.strftime('%B %d, %Y') }} - {{ period.end_date.strftime('%B %d, %Y') }}
+                            </span>
+                            {% if period.completion_rate %}
+                            <span class="badge-{% if period.completion_rate >= 80 %}active{% elif period.completion_rate >= 50 %}essay{% else %}inactive{% endif %} clean-badge">
+                                {{ period.completion_rate }}% Complete
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('period_progress', period_id=period.id) }}" class="btn-clean-secondary clean-btn">
+                            <i class="fas fa-chart-line"></i>View Progress
+                        </a>
+                        <a href="{{ url_for('assessment_periods') }}" class="btn-clean-light clean-btn">
+                            <i class="fas fa-arrow-left"></i>Back to Periods
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-3">
+                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ officers|length }}</h3>
+                    <p class="text-muted mb-0">Officers Available</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-3">
+                    <i class="fas fa-user-tie fa-2x text-info mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ reviewers|length }}</h3>
+                    <p class="text-muted mb-0">Board Members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-3">
+                    <i class="fas fa-clipboard-list fa-2x text-warning mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ existing_assignments|length if existing_assignments else 0 }}</h3>
+                    <p class="text-muted mb-0">Total Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-3">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <h3 class="fw-bold mb-1">{{ existing_assignments | selectattr('is_completed', 'equalto', true) | list | length if existing_assignments else 0 }}</h3>
+                    <p class="text-muted mb-0">Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Matrix -->
+    {% if existing_assignments %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-table me-2"></i>360° Review Matrix
+                    </h4>
+                    <p>Overview of all reviewer-officer combinations and their completion status</p>
+                </div>
+                <div class="p-0">
+                    <div class="clean-table">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead class="sticky-top" style="background: white; z-index: 10;">
+                                    <tr>
+                                        <th style="min-width: 180px;">Officer</th>
+                                        {% for reviewer in reviewers %}
+                                        <th class="text-center" style="min-width: 120px;">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-user-tie text-info mb-1"></i>
+                                                <small class="fw-bold">{{ reviewer.name.split()[0] }}</small>
+                                            </div>
+                                        </th>
+                                        {% endfor %}
+                                        <th class="text-center" style="min-width: 100px;">Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for officer in officers %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user text-primary me-2"></i>
+                                                <div>
+                                                    <div class="fw-bold">{{ officer.name }}</div>
+                                                    <small class="text-muted">{{ officer.email.split('@')[0] }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        {% for reviewer in reviewers %}
+                                        {% set assignment = existing_assignments | selectattr('officer_id', 'equalto', officer.id) | selectattr('reviewer_id', 'equalto', reviewer.id) | first %}
+                                        <td class="text-center">
+                                            {% if assignment %}
+                                                {% if assignment.is_completed %}
+                                                    <span class="badge-active clean-badge p-2" title="Review Completed">
+                                                        <i class="fas fa-check"></i>
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge-essay clean-badge p-2" title="Review Pending">
+                                                        <i class="fas fa-clock"></i>
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge-inactive clean-badge p-2" title="Not Assigned">
+                                                    <i class="fas fa-minus"></i>
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        {% endfor %}
+                                        <td class="text-center">
+                                            {% set officer_assignments = existing_assignments | selectattr('officer_id', 'equalto', officer.id) | list %}
+                                            {% set completed = officer_assignments | selectattr('is_completed', 'equalto', true) | list | length %}
+                                            {% set total = officer_assignments | length %}
+                                            {% if total > 0 %}
+                                                {% set percentage = (completed / total * 100) | round | int %}
+                                                <div class="progress" style="height: 6px; width: 60px;">
+                                                    <div class="progress-bar bg-{% if percentage >= 80 %}success{% elif percentage >= 50 %}warning{% else %}danger{% endif %}" 
+                                                         style="width: {{ percentage }}%"></div>
+                                                </div>
+                                                <small class="text-muted">{{ completed }}/{{ total }}</small>
+                                            {% else %}
+                                                <small class="text-muted">-</small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assignment Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-plus me-2"></i>Create New Review Assignments
+                    </h4>
+                    <p>Select officers to be reviewed and assign board members as reviewers</p>
+                </div>
+                <div class="p-4">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-lg-6 mb-4">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-users me-2 text-primary"></i>Officers to Review
+                                </h5>
+                                <div class="d-flex gap-2 mb-3">
+                                    <button type="button" class="btn-clean-light clean-btn btn-sm" id="selectAllOfficers">
+                                        <i class="fas fa-check-square"></i> Select All
+                                    </button>
+                                    <button type="button" class="btn-clean-light clean-btn btn-sm" id="clearAllOfficers">
+                                        <i class="fas fa-square"></i> Clear All
+                                    </button>
+                                </div>
+                                <div class="selection-grid">
+                                    {% for officer in officers %}
+                                    <div class="selection-item">
+                                        <input class="form-check-input" type="checkbox" name="officers" 
+                                               value="{{ officer.id }}" id="officer{{ officer.id }}">
+                                        <label class="form-check-label" for="officer{{ officer.id }}">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user text-primary me-2"></i>
+                                                <div>
+                                                    <div class="fw-bold">{{ officer.name }}</div>
+                                                    <small class="text-muted">{{ officer.email }}</small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-6 mb-4">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-user-tie me-2 text-info"></i>Board Member Reviewers
+                                </h5>
+                                <div class="d-flex gap-2 mb-3">
+                                    <button type="button" class="btn-clean-light clean-btn btn-sm" id="selectAllReviewers">
+                                        <i class="fas fa-check-square"></i> Select All
+                                    </button>
+                                    <button type="button" class="btn-clean-light clean-btn btn-sm" id="clearAllReviewers">
+                                        <i class="fas fa-square"></i> Clear All
+                                    </button>
+                                </div>
+                                <div class="selection-grid">
+                                    {% for reviewer in reviewers %}
+                                    <div class="selection-item">
+                                        <input class="form-check-input" type="checkbox" name="reviewers" 
+                                               value="{{ reviewer.id }}" id="reviewer{{ reviewer.id }}">
+                                        <label class="form-check-label" for="reviewer{{ reviewer.id }}">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-tie text-info me-2"></i>
+                                                <div>
+                                                    <div class="fw-bold">{{ reviewer.name }}</div>
+                                                    <small class="text-muted">{{ reviewer.email }}</small>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assignment Options -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="modern-card">
+                                    <div class="p-3">
+                                        <h6 class="mb-3">
+                                            <i class="fas fa-cog me-2"></i>Assignment Options
+                                        </h6>
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                {{ form.create_todos.label(class="form-label fw-bold") }}
+                                                {{ form.create_todos(class="form-select") }}
+                                                <div class="form-text">Creating to-do activities will notify reviewers when they log in</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="assignment-preview p-3 bg-light rounded">
+                                                    <div class="text-center">
+                                                        <h6 class="mb-1">Assignment Preview</h6>
+                                                        <div id="assignment-count" class="fw-bold text-primary fs-4">0</div>
+                                                        <small class="text-muted">total reviews</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            {{ form.submit(class="btn-clean-primary clean-btn btn-lg", id="submitBtn", disabled="disabled") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Assignments Management -->
+    {% if existing_assignments %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-tasks me-2"></i>Current Assignments
+                    </h4>
+                    <p>Manage and track individual review assignments</p>
+                </div>
+                <div class="p-0">
+                    <div class="clean-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Officer</th>
+                                    <th>Reviewer</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in existing_assignments | sort(attribute='officer.name') %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user text-primary me-2"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ assignment.officer.name }}</div>
+                                                <small class="text-muted">{{ assignment.officer.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-tie text-info me-2"></i>
+                                            <div>
+                                                <div class="fw-bold">{{ assignment.reviewer.name }}</div>
+                                                <small class="text-muted">{{ assignment.reviewer.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if assignment.is_completed %}
+                                            <span class="badge-active clean-badge">
+                                                <i class="fas fa-check me-1"></i>Completed
+                                            </span>
+                                            {% if assignment.completed_at %}
+                                            <br><small class="text-muted">{{ assignment.completed_at.strftime('%m/%d/%Y') }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge-essay clean-badge">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                            {% if assignment.is_notified %}
+                                            <br><small class="text-success"><i class="fas fa-bell me-1"></i>Notified</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if assignment.created_at %}
+                                                {{ assignment.created_at.strftime('%m/%d/%Y') }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if not assignment.is_completed %}
+                                        <a href="#" class="btn-clean-light clean-btn p-1" title="Send Reminder">
+                                            <i class="fas fa-bell"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if assignment.assessment %}
+                                        <a href="{{ url_for('view_assessment', assessment_id=assignment.assessment.id) }}" class="btn-clean-light clean-btn p-1" title="View Assessment Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+<style>
+.selection-grid {
+    display: grid;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+}
+
+.selection-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.selection-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.1);
+}
+
+.selection-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.selection-item label {
+    flex: 1;
+    margin: 0;
+    cursor: pointer;
+}
+
+.assignment-preview {
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const officerCheckboxes = document.querySelectorAll('input[name="officers"]');
+    const reviewerCheckboxes = document.querySelectorAll('input[name="reviewers"]');
+    const assignmentCount = document.getElementById('assignment-count');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Update assignment count and enable/disable submit button
+    function updateAssignmentCount() {
+        const selectedOfficers = document.querySelectorAll('input[name="officers"]:checked').length;
+        const selectedReviewers = document.querySelectorAll('input[name="reviewers"]:checked').length;
+        const totalAssignments = selectedOfficers * selectedReviewers;
+        
+        assignmentCount.textContent = totalAssignments;
+        
+        if (totalAssignments > 0) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-plus"></i>Create ' + totalAssignments + ' Review Assignments';
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-plus"></i>Create Assignments';
+        }
+    }
+    
+    // Add event listeners to checkboxes
+    [...officerCheckboxes, ...reviewerCheckboxes].forEach(checkbox => {
+        checkbox.addEventListener('change', updateAssignmentCount);
+    });
+    
+    // Select/Clear all buttons
+    document.getElementById('selectAllOfficers').addEventListener('click', function() {
+        officerCheckboxes.forEach(cb => cb.checked = true);
+        updateAssignmentCount();
+    });
+    
+    document.getElementById('clearAllOfficers').addEventListener('click', function() {
+        officerCheckboxes.forEach(cb => cb.checked = false);
+        updateAssignmentCount();
+    });
+    
+    document.getElementById('selectAllReviewers').addEventListener('click', function() {
+        reviewerCheckboxes.forEach(cb => cb.checked = true);
+        updateAssignmentCount();
+    });
+    
+    document.getElementById('clearAllReviewers').addEventListener('click', function() {
+        reviewerCheckboxes.forEach(cb => cb.checked = false);
+        updateAssignmentCount();
+    });
+    
+    // Initial update
+    updateAssignmentCount();
+});
+</script>
+{% endblock %}

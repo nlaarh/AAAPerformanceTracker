@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}View Assessment{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Assessment Review</h2>
+                    <p class="text-muted mb-0">{{ assignment.reviewer.name }}'s evaluation of {{ assignment.officer.name }}</p>
+                </div>
+                <a href="{{ url_for('my_assignments') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to My Assignments
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Assessment Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Assessment Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Officer</h6>
+                            <p class="mb-0">{{ assignment.officer.name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Reviewer</h6>
+                            <p class="mb-0">{{ assignment.reviewer.name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Assessment Period</h6>
+                            <p class="mb-0">{{ assignment.period.name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Status</h6>
+                            <p class="mb-0">
+                                {% if assignment.is_completed %}
+                                    <span class="badge bg-success">Completed</span>
+                                    {% if assignment.completed_at %}
+                                        <br><small class="text-muted">{{ assignment.completed_at.strftime('%B %d, %Y') }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Assessment Form and Responses -->
+    {% if assessment_form and questions %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ assessment_form.title }}</h5>
+                    {% if assessment_form.description %}
+                        <p class="text-muted mb-0 mt-1">{{ assessment_form.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if responses %}
+                        {% for question in questions %}
+                            {% set response = responses.get(question.id) %}
+                            <div class="mb-4 border-bottom pb-3">
+                                <label class="form-label fw-bold">
+                                    {{ question.question_name }}
+                                    {% if question.is_required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                {% if question.question_text != question.question_name %}
+                                    <p class="text-muted small mb-2">{{ question.question_text }}</p>
+                                {% endif %}
+
+                                {% if response %}
+                                    {% set settings = question.get_settings() if question.settings else {} %}
+                                    
+                                    {% if question.question_type == 'rating' and response.response_number %}
+                                        <div class="response-display p-3 bg-light rounded">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2 fs-6">{{ response.response_number|int }}/{{ settings.get('max_rating', 5) }}</span>
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar" role="progressbar" 
+                                                         style="width: {{ (response.response_number / settings.get('max_rating', 5) * 100)|round }}%"></div>
+                                                </div>
+                                            </div>
+                                            {% if response.response_text %}
+                                                <div class="mt-2">
+                                                    <strong>Comment:</strong>
+                                                    <p class="mb-0 mt-1">{{ response.response_text }}</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    
+                                    {% elif question.question_type in ['text', 'textarea'] and response.response_text %}
+                                        <div class="response-display p-3 bg-light rounded">
+                                            <p class="mb-0">{{ response.response_text }}</p>
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'boolean' and response.response_boolean is not none %}
+                                        <div class="response-display p-3 bg-light rounded">
+                                            <span class="badge {% if response.response_boolean %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ 'Yes' if response.response_boolean else 'No' }}
+                                            </span>
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'date' and (response.response_date or response.response_text) %}
+                                        <div class="response-display p-3 bg-light rounded">
+                                            <p class="mb-0">
+                                                {% if response.response_date %}
+                                                    {{ response.response_date.strftime('%B %d, %Y') }}
+                                                {% else %}
+                                                    {{ response.response_text }}
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    
+                                    {% elif question.question_type in ['checkbox', 'dropdown', 'multiple_choice'] and response.response_text %}
+                                        <div class="response-display p-3 bg-light rounded">
+                                            <p class="mb-0">{{ response.response_text }}</p>
+                                        </div>
+                                    
+                                    {% else %}
+                                        <div class="response-display p-3 bg-light rounded">
+                                            {% if response.response_text %}
+                                                <p class="mb-0">{{ response.response_text }}</p>
+                                            {% elif response.response_number %}
+                                                <p class="mb-0">{{ response.response_number }}</p>
+                                            {% else %}
+                                                <p class="mb-0 text-muted">No response provided</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="response-display p-3 bg-light rounded">
+                                        <p class="mb-0 text-muted">No response provided</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No responses have been submitted for this assessment yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No assessment form is assigned to this period or the form could not be found.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

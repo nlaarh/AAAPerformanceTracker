@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-users-cog me-2"></i>User Management
+            </h2>
+            <p class="text-muted mb-0">Manage user accounts and monitor system activity</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('create_user') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-1"></i>Add New User
+            </a>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i>Export/Import
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('export_users') }}">
+                        <i class="fas fa-download me-2"></i>Export to Excel
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ url_for('import_users') }}" method="post" enctype="multipart/form-data" class="px-3 py-2">
+                            <div class="mb-2">
+                                <label for="userFile" class="form-label small">Import Users:</label>
+                                <input type="file" class="form-control form-control-sm" id="userFile" name="file" accept=".xlsx,.xls">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-upload me-1"></i>Import Excel
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Table -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>All Users ({{ users|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Created Date</th>
+                                    <th class="no-sort">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ user.name }}</strong>
+                                        {% if user.id == current_user.id %}
+                                        <span class="badge bg-warning text-dark ms-1">You</span>
+                                        {% endif %}
+                                        {% if not user.is_active %}
+                                        <span class="badge bg-secondary ms-1">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'board_member' %}bg-info{% else %}bg-success{% endif %}">
+                                            {{ user.role|title|replace('_', ' ') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%m/%d/%Y') if user.created_at else 'N/A' }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary" title="Edit User">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="showPassword({{ user.id }})" title="Show Password">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" onclick="copyPassword({{ user.id }})" title="Copy Password">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                            <a href="{{ url_for('user_activity', user_id=user.id) }}" class="btn btn-sm btn-outline-info" title="View Activity">
+                                                <i class="fas fa-history"></i>
+                                            </a>
+                                            {% if user.id != current_user.id %}
+                                            <button class="btn btn-sm btn-outline-{% if user.is_active %}warning{% else %}success{% endif %}" onclick="confirmStatusToggle('{{ user.id }}', '{{ user.name }}', {{ user.is_active|tojson }})" title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %} User">
+                                                <i class="fas fa-{% if user.is_active %}pause{% else %}play{% endif %}"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteUser('{{ user.id }}', '{{ user.name }}', '{{ user.email }}')" title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h6>No Users Found</h6>
+                        <p class="text-muted">Create your first user to get started.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Recent System Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if activity_logs %}
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        {% for log in activity_logs[:20] %}
+                        <div class="d-flex mb-3">
+                            <div class="me-2">
+                                <span class="badge 
+                                {% if log.action == 'login' %}bg-success
+                                {% elif log.action == 'logout' %}bg-secondary
+                                {% elif log.action in ['user_create', 'user_update'] %}bg-primary
+                                {% elif log.action == 'password_change' %}bg-warning
+                                {% elif log.action in ['assessment_create', 'assessment_submit'] %}bg-info
+                                {% elif log.action in ['view_dashboard', 'view_assessment', 'view_officer_reviews'] %}bg-light text-dark
+                                {% else %}bg-secondary{% endif %}" style="font-size: 0.7em;">
+                                    {{ log.action|replace('_', ' ')|title }}
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="small">
+                                    <strong>{{ log.user.name }}</strong>
+                                </div>
+                                <div class="small text-muted">
+                                    {{ log.description[:60] }}{% if log.description and log.description|length > 60 %}...{% endif %}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ log.timestamp.strftime('%m/%d %I:%M %p') }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                        <p class="text-muted small">No activity recorded yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>User Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="card border-danger">
+                                <div class="card-body p-2">
+                                    <i class="fas fa-user-shield text-danger mb-1"></i>
+                                    <div class="h5 mb-0">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</div>
+                                    <small class="text-muted">Admins</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card border-info">
+                                <div class="card-body p-2">
+                                    <i class="fas fa-user-tie text-info mb-1"></i>
+                                    <div class="h5 mb-0">{{ users|selectattr('role', 'equalto', 'board_member')|list|length }}</div>
+                                    <small class="text-muted">Board</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card border-success">
+                                <div class="card-body p-2">
+                                    <i class="fas fa-user text-success mb-1"></i>
+                                    <div class="h5 mb-0">{{ users|selectattr('role', 'equalto', 'officer')|list|length }}</div>
+                                    <small class="text-muted">Officers</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+.btn-group .btn {
+    border-radius: 0.25rem;
+    margin-right: 2px;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.border-danger { border-color: #dc3545 !important; }
+.border-info { border-color: #17a2b8 !important; }
+.border-success { border-color: #28a745 !important; }
+</style>
+
+<!-- Password Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passwordModalLabel">User Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Security Notice:</strong> Handle passwords with care and ensure this information is kept confidential.
+                </div>
+                <div class="mb-3">
+                    <label for="userEmail" class="form-label">User Email:</label>
+                    <input type="text" class="form-control" id="userEmail" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="userPassword" class="form-label">Password:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="userPassword" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('userPassword')">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function showPassword(userId) {
+    try {
+        const response = await fetch(`/admin/get_user_password/${userId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('userEmail').value = data.email;
+            document.getElementById('userPassword').value = data.password;
+            
+            const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+            modal.show();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error fetching password: ' + error.message);
+    }
+}
+
+async function copyPassword(userId) {
+    try {
+        const response = await fetch(`/admin/get_user_password/${userId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            await navigator.clipboard.writeText(data.password);
+            
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-check me-2"></i>Password copied to clipboard!
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toast);
+            });
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error copying password: ' + error.message);
+    }
+}
+
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(element.value).then(() => {
+        const originalText = element.nextElementSibling.innerHTML;
+        element.nextElementSibling.innerHTML = '<i class="fas fa-check text-success"></i> Copied!';
+        
+        setTimeout(() => {
+            element.nextElementSibling.innerHTML = originalText;
+        }, 2000);
+    });
+}
+
+// Status toggle confirmation function
+function confirmStatusToggle(userId, userName, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    const actionColor = isActive ? 'warning' : 'success';
+    const note = isActive 
+        ? 'Inactive users will not appear in new assignment creation and cannot log in.'
+        : 'User will be reactivated and can log in again.';
+    
+    const modalHtml = `
+    <div class="modal fade" id="statusToggleConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-${actionColor} text-${isActive ? 'dark' : 'white'}">
+                    <h5 class="modal-title">
+                        <i class="fas fa-toggle-on me-2"></i>${action.charAt(0).toUpperCase() + action.slice(1)} User
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to ${action} the following user?</p>
+                    <div class="card">
+                        <div class="card-body">
+                            <strong>User:</strong> ${userName}
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        ${note}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="/admin/toggle_user_status/${userId}" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-${actionColor}">
+                            <i class="fas fa-toggle-on me-2"></i>${action.charAt(0).toUpperCase() + action.slice(1)} User
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    showModal('statusToggleConfirmModal', modalHtml);
+}
+
+// Enhanced delete user confirmation function
+async function confirmDeleteUser(userId, userName, userEmail) {
+    try {
+        // Get user dependencies first
+        const response = await fetch(`/admin/get_user_dependencies/${userId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert('Error loading user data: ' + data.error);
+            return;
+        }
+        
+        const deps = data.dependencies;
+        const hasDependencies = deps.has_dependencies;
+        
+        let dependencyList = '';
+        if (hasDependencies) {
+            dependencyList = `
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-database me-2"></i>Data Dependencies Found</h6>
+                    <p class="mb-2">This user has the following data that will be permanently deleted:</p>
+                    <ul class="mb-0">
+                        ${deps.assessments_given > 0 ? `<li><strong>${deps.assessments_given}</strong> assessments given to other users</li>` : ''}
+                        ${deps.assessments_received > 0 ? `<li><strong>${deps.assessments_received}</strong> assessments received from other users</li>` : ''}
+                        ${deps.assignments_as_reviewer > 0 ? `<li><strong>${deps.assignments_as_reviewer}</strong> reviewer assignments</li>` : ''}
+                        ${deps.assignments_as_officer > 0 ? `<li><strong>${deps.assignments_as_officer}</strong> officer assignments</li>` : ''}
+                        ${deps.question_responses > 0 ? `<li><strong>${deps.question_responses}</strong> individual question responses</li>` : ''}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        const modalHtml = `
+        <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Confirm User Deletion
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Critical Warning:</strong> This action cannot be undone!
+                        </div>
+                        <p>You are about to permanently delete the following user:</p>
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <p class="mb-1"><strong>Name:</strong> ${userName}</p>
+                                <p class="mb-0"><strong>Email:</strong> ${userEmail}</p>
+                            </div>
+                        </div>
+                        
+                        ${dependencyList}
+                        
+                        <div class="mb-3">
+                            <label for="deleteConfirmText" class="form-label">
+                                Type <strong>"DELETE ALL DATA"</strong> to confirm permanent deletion:
+                            </label>
+                            <input type="text" class="form-control" id="deleteConfirmText" placeholder="Type DELETE ALL DATA to confirm">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteButton" disabled onclick="executeDelete(${userId})">
+                            <i class="fas fa-trash me-2"></i>Delete User & All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        showModal('deleteConfirmModal', modalHtml);
+        
+        // Enable delete button when confirmation text is typed
+        document.getElementById('deleteConfirmText').addEventListener('input', function() {
+            const confirmButton = document.getElementById('confirmDeleteButton');
+            confirmButton.disabled = this.value !== 'DELETE ALL DATA';
+        });
+        
+    } catch (error) {
+        alert('Error loading user data: ' + error.message);
+    }
+}
+
+function executeDelete(userId) {
+    // Create and submit form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/delete_user/${userId}`;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function showModal(modalId, modalHtml) {
+    // Remove existing modal if present
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+    
+    // Clean up modal after hiding
+    document.getElementById(modalId).addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+</script>
+
+{% endblock %}
