@@ -542,6 +542,14 @@ body {
     outline-offset: 2px;
 }
 
+/* Fix assessment response text alignment */
+.border.p-3.bg-light.rounded p,
+.text-response p,
+.multiple-choice-response p,
+.default-response p {
+    text-align: left !important;
+}
+
 /* Print Styles */
 @media print {
     .modern-navbar,
