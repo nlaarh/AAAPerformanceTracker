@@ -524,15 +524,27 @@ def generate_matrix_excel_report(officer, matrix_data, reviewers, overall_matrix
         col += 1
         for reviewer in reviewer_list:
             response = question_data['responses'].get(reviewer.name)
-            rating = response.get('rating') if response else None
+            rating = None
             
-            cell = ws.cell(row=row, column=col, value=rating or "—")
+            # Safe handling of response data
+            if response is not None:
+                if isinstance(response, dict):
+                    rating = response.get('rating')
+                elif isinstance(response, (int, float)):
+                    # Handle case where response is stored as direct rating value
+                    rating = response
+                else:
+                    rating = None
+            
+            # Display rating or empty indicator
+            display_value = rating if rating is not None else "—"
+            cell = ws.cell(row=row, column=col, value=display_value)
             cell.font = content_font
             cell.alignment = center_align
             cell.border = thin_border
             
             # Color coding for ratings
-            if rating:
+            if rating is not None and isinstance(rating, (int, float)):
                 if rating >= 4:
                     cell.fill = PatternFill(start_color='d4edda', end_color='d4edda', fill_type='solid')
                 elif rating <= 2:
@@ -584,8 +596,17 @@ def generate_matrix_excel_report(officer, matrix_data, reviewers, overall_matrix
         reviewer_ratings = []
         for question_data in matrix_data:
             response = question_data['responses'].get(reviewer.name)
-            if response and response.get('rating'):
-                reviewer_ratings.append(response['rating'])
+            if response is not None:
+                rating = None
+                if isinstance(response, dict):
+                    rating = response.get('rating')
+                elif isinstance(response, (int, float)):
+                    rating = response
+                else:
+                    rating = None
+                
+                if rating is not None and isinstance(rating, (int, float)):
+                    reviewer_ratings.append(rating)
         
         if reviewer_ratings:
             reviewer_avg = round(sum(reviewer_ratings) / len(reviewer_ratings), 1)
