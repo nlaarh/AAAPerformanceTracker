@@ -1,8 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, IntegerField, SubmitField, HiddenField, DateField, SelectMultipleField, BooleanField
-from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError
+from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError, Optional
 from wtforms.widgets import CheckboxInput, ListWidget
-from models import User, Category
+from models import User, Category, AssessmentStatus
 from datetime import datetime, timedelta
 
 class LoginForm(FlaskForm):
@@ -63,30 +63,43 @@ class MultiCheckboxField(SelectMultipleField):
     option_widget = CheckboxInput()
 
 class AssessmentPeriodForm(FlaskForm):
-    name = StringField('Assessment Period Name', validators=[DataRequired(), Length(min=5, max=200)],
+    name = StringField('Assessment Project Name', validators=[DataRequired(), Length(min=5, max=200)],
                       render_kw={'placeholder': 'e.g., Q4 2025 Annual Review'})
     description = TextAreaField('Description', validators=[Length(max=500)],
-                               render_kw={'rows': 3, 'placeholder': 'Brief description of this assessment period...'})
+                               render_kw={'rows': 3, 'placeholder': 'Brief description of this assessment project...'})
     start_date = DateField('Start Date', validators=[DataRequired()], 
                           default=lambda: datetime.now().replace(month=1, day=1).date())
     end_date = DateField('End Date', validators=[DataRequired()],
                         default=lambda: datetime.now().replace(month=12, day=31).date())
+    due_date = DateField('Assessment Due Date', validators=[Optional()],
+                        render_kw={'placeholder': 'Optional: When assessments should be completed'})
     
     # Assessment Form Assignment
     reviewer_form_ids = SelectMultipleField('Reviewer Forms (Used by reviewers to evaluate reviewees)', coerce=int)
     self_review_form_ids = SelectMultipleField('Self-Assessment Forms (Used by reviewees for self-evaluation)', coerce=int)
     
-    submit = SubmitField('Create Assessment Period')
+    # User Selection for this Project
+    selected_reviewees = MultiCheckboxField('Reviewees (People to be reviewed)', coerce=int)
+    selected_reviewers = MultiCheckboxField('Reviewers (People who will conduct reviews)', coerce=int)
+    
+    submit = SubmitField('Create Assessment Project')
     
     def __init__(self, *args, **kwargs):
         super(AssessmentPeriodForm, self).__init__(*args, **kwargs)
-        from models import AssessmentForm
+        from models import AssessmentForm, User
         
         # Populate assessment forms for both reviewer and self-review selection (only active forms)
         forms = AssessmentForm.query.filter_by(is_active=True).order_by(AssessmentForm.title).all()
         form_choices = [(f.id, f.title) for f in forms]
         self.reviewer_form_ids.choices = form_choices
         self.self_review_form_ids.choices = form_choices
+        
+        # Populate user choices for reviewees and reviewers (only active users)
+        reviewee_users = User.query.filter(User.role.in_(['officer', 'admin']), User.is_active == True).order_by(User.name).all()
+        reviewer_users = User.query.filter(User.role.in_(['board_member', 'admin', 'officer']), User.is_active == True).order_by(User.name).all()
+        
+        self.selected_reviewees.choices = [(u.id, f"{u.name} ({u.role.replace('_', ' ').title()})") for u in reviewee_users]
+        self.selected_reviewers.choices = [(u.id, f"{u.name} ({u.role.replace('_', ' ').title()})") for u in reviewer_users]
 
 class AssignmentForm(FlaskForm):
     period_id = HiddenField('Period ID', validators=[DataRequired()])
@@ -185,7 +198,7 @@ class EditAssessmentFormTitleForm(FlaskForm):
     submit = SubmitField('Update Form')
 
 class AssignFormToPeriodForm(FlaskForm):
-    period_id = SelectField('Assessment Period', coerce=int, validators=[DataRequired()])
+    period_id = SelectField('Assessment Project', coerce=int, validators=[DataRequired()])
     reviewer_form_ids = SelectMultipleField('Reviewer Forms (Used by reviewers)', coerce=int)
     self_review_form_ids = SelectMultipleField('Self-Review Forms (Used by reviewees)', coerce=int)
     submit = SubmitField('Assign Forms to Period')
@@ -214,3 +227,55 @@ class AssignFormToPeriodForm(FlaskForm):
             return False
         
         return True
+
+class EditAssessmentPeriodForm(FlaskForm):
+    name = StringField('Assessment Project Name', validators=[DataRequired(), Length(min=5, max=200)])
+    description = TextAreaField('Description', validators=[Length(max=500)],
+                               render_kw={'rows': 3, 'placeholder': 'Brief description of this assessment project...'})
+    start_date = DateField('Start Date', validators=[DataRequired()])
+    end_date = DateField('End Date', validators=[DataRequired()])
+    due_date = DateField('Assessment Due Date', validators=[Optional()],
+                        render_kw={'placeholder': 'Optional: When assessments should be completed'})
+    submit = SubmitField('Update Assessment Project')
+
+class CloneAssessmentPeriodForm(FlaskForm):
+    name = StringField('New Assessment Project Name', validators=[DataRequired(), Length(min=5, max=200)],
+                      render_kw={'placeholder': 'e.g., Q1 2026 Annual Review'})
+    description = TextAreaField('Description', validators=[Length(max=500)],
+                               render_kw={'rows': 3, 'placeholder': 'Brief description of this assessment project...'})
+    start_date = DateField('Start Date', validators=[DataRequired()])
+    end_date = DateField('End Date', validators=[DataRequired()])
+    due_date = DateField('Assessment Due Date', validators=[Optional()],
+                        render_kw={'placeholder': 'Optional: When assessments should be completed'})
+    copy_forms = BooleanField('Copy Assessment Forms', default=True)
+    submit = SubmitField('Clone Assessment Project')
+
+
+class AdminReviewForm(FlaskForm):
+    """Form for admin to review and approve self-assessments"""
+    action = SelectField('Action', choices=[
+        ('approve', 'Approve and Release to Reviewers'),
+        ('reject', 'Send Back for Revision')
+    ], validators=[DataRequired()])
+    admin_notes = TextAreaField('Admin Notes', validators=[Length(max=1000)],
+                               render_kw={'rows': 4, 'placeholder': 'Add notes about this review decision...'})
+    submit = SubmitField('Submit Review')
+
+
+class FinalApprovalForm(FlaskForm):
+    """Form for final admin approval after all reviewers complete"""
+    action = SelectField('Action', choices=[
+        ('approve', 'Approve and Release Results'),
+        ('hold', 'Hold for Further Review')
+    ], validators=[DataRequired()])
+    admin_notes = TextAreaField('Final Notes', validators=[Length(max=1000)],
+                               render_kw={'rows': 4, 'placeholder': 'Final approval notes...'})
+    submit = SubmitField('Submit Final Approval')
+
+
+class AcknowledgeResultsForm(FlaskForm):
+    """Form for reviewee to acknowledge their assessment results"""
+    acknowledged = BooleanField('I acknowledge that I have reviewed my assessment results', validators=[DataRequired()])
+    reviewee_feedback = TextAreaField('Feedback on Assessment Process (Optional)', validators=[Length(max=1000)],
+                                    render_kw={'rows': 4, 'placeholder': 'Optional feedback about the assessment process...'})
+    submit = SubmitField('Acknowledge Results')
