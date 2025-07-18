@@ -70,6 +70,19 @@ tmp/
 backup_*.sql
 *_backup.py
 backup_*.py
+*.tar.gz
+code_backup_*.tar.gz
+
+# Cache directories
+.cache/
+.uv/
+.pip/
+node_modules/
+
+# Large development files (but keep essential app files)
+matrix_cache_*.json
+*_backup_*.html
+*_broken_*.html
 
 # Test files
 test_*.py
