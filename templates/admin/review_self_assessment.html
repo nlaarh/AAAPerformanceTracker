@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Review Self-Assessment - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-eye me-2"></i>
+                                Review Self-Assessment
+                            </h4>
+                            <p class="text-muted mb-0">{{ project.officer.name }} - {{ project.period.name }}</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('admin_assessment_projects') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Projects
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Officer Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Officer Information</h5>
+                            <p><strong>Name:</strong> {{ project.officer.name }}</p>
+                            <p><strong>Email:</strong> {{ project.officer.email }}</p>
+                            <p><strong>Role:</strong> {{ project.officer.role.title() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Project Status</h5>
+                            <p><strong>Period:</strong> {{ project.period.name }}</p>
+                            <p><strong>Status:</strong> 
+                                {% if project.status == AssessmentStatus.SELF_ASSESSMENT_SUBMITTED %}
+                                    <span class="badge bg-info">Self-Assessment Submitted</span>
+                                {% elif project.status == AssessmentStatus.AWAITING_ADMIN_REVIEW %}
+                                    <span class="badge bg-primary">Awaiting Admin Review</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Submitted:</strong> {{ project.self_assessment_submitted_at.strftime('%Y-%m-%d %H:%M') if project.self_assessment_submitted_at else 'N/A' }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Self-Assessment Responses -->
+                    <div class="mb-4">
+                        <h5>Self-Assessment Responses</h5>
+                        {% if responses %}
+                            {% for response in responses %}
+                                <div class="card mb-3 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ response.question.question_name }}</h6>
+                                        <p class="text-muted mb-2">{{ response.question.question_text }}</p>
+                                        
+                                        {% if response.question.question_type == 'rating' %}
+                                            <div class="mb-2">
+                                                <strong>Rating:</strong> 
+                                                <span class="badge bg-primary">{{ response.response_number }}/5</span>
+                                            </div>
+                                        {% elif response.question.question_type in ['text', 'textarea'] %}
+                                            <div class="mb-2">
+                                                <strong>Response:</strong>
+                                                <div class="bg-light p-3 rounded mt-2">
+                                                    {{ response.response_text or 'No response provided' }}
+                                                </div>
+                                            </div>
+                                        {% elif response.question.question_type == 'boolean' %}
+                                            <div class="mb-2">
+                                                <strong>Response:</strong> 
+                                                <span class="badge {% if response.response_boolean %}bg-success{% else %}bg-secondary{% endif %}">
+                                                    {{ 'Yes' if response.response_boolean else 'No' }}
+                                                </span>
+                                            </div>
+                                        {% elif response.question.question_type == 'date' %}
+                                            <div class="mb-2">
+                                                <strong>Date:</strong> {{ response.response_date.strftime('%Y-%m-%d') if response.response_date else 'N/A' }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                No self-assessment responses found.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Admin Review Form -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Admin Review</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <!-- Admin Notes -->
+                                <div class="mb-3">
+                                    {{ form.admin_notes.label(class="form-label") }}
+                                    {{ form.admin_notes(class="form-control", rows="4", placeholder="Add your review comments here...") }}
+                                    {% if form.admin_notes.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.admin_notes.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <button type="submit" name="action" value="approve" class="btn btn-success w-100">
+                                            <i class="fas fa-check me-2"></i>Approve & Release to Reviewers
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button type="submit" name="action" value="reject" class="btn btn-warning w-100">
+                                            <i class="fas fa-undo me-2"></i>Send Back for Revision
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

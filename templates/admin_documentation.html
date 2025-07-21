@@ -1,0 +1,626 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Documentation - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header with Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body p-4 text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h2 mb-2 fw-light">
+                                <i class="fas fa-book me-3"></i>Administrator Documentation
+                            </h1>
+                            <p class="mb-0 opacity-75">Complete guide to managing assessment projects and system administration</p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('admin_main') }}" class="btn btn-light btn-sm">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI-Powered Help Assistant -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2 text-primary"></i>AI Help Assistant
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="helpQuery" placeholder="Ask me anything: 'How do I create an assessment project?' or 'How to add new users?'">
+                                <button class="btn btn-primary" type="button" onclick="getHelp()">
+                                    <i class="fas fa-search me-1"></i>Get Help
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="quickHelp('create project')">
+                                    <i class="fas fa-plus me-1"></i>Create Project
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="quickHelp('add users')">
+                                    <i class="fas fa-user-plus me-1"></i>Add Users
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="helpResponse" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <div id="helpContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-compass me-2"></i>Quick Navigation
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="#getting-started" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-play me-2"></i>Getting Started
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#assessment-workflow" class="btn btn-outline-success w-100">
+                                <i class="fas fa-tasks me-2"></i>Assessment Workflow
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#user-management" class="btn btn-outline-info w-100">
+                                <i class="fas fa-users me-2"></i>User Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#system-features" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-cogs me-2"></i>System Features
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentation Sections -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Getting Started Section -->
+            <div class="card border-0 shadow-sm mb-4" id="getting-started">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-play me-2"></i>Getting Started
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>System Overview</h5>
+                            <p>The AAA Performance Tracker is a comprehensive 360-degree review system that manages executive performance evaluations through a structured workflow.</p>
+                            
+                            <h6>Key Components:</h6>
+                            <ul>
+                                <li><strong>Assessment Projects:</strong> Time-bound evaluation periods</li>
+                                <li><strong>Assessment Forms:</strong> Customizable questionnaires</li>
+                                <li><strong>User Roles:</strong> Admin, Board Members, Officers</li>
+                                <li><strong>AI Analysis:</strong> Automated report generation</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Your Role as Administrator</h5>
+                            <p>As an administrator, you have complete control over:</p>
+                            <ul>
+                                <li>Creating and managing assessment projects</li>
+                                <li>Setting up assessment forms and questions</li>
+                                <li>Managing users and assignments</li>
+                                <li>Monitoring progress and generating reports</li>
+                                <li>Approving workflow stages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Workflow Section -->
+            <div class="card border-0 shadow-sm mb-4" id="assessment-workflow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Complete Assessment Workflow
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Step-by-Step Process</h5>
+                            <div class="accordion" id="workflowAccordion">
+                                <!-- Step 1 -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#step1">
+                                            <span class="badge bg-success me-3">1</span>Create Assessment Forms FIRST
+                                        </button>
+                                    </h2>
+                                    <div id="step1" class="accordion-collapse collapse show" data-bs-parent="#workflowAccordion">
+                                        <div class="accordion-body">
+                                            <h6>What You Do:</h6>
+                                            <ol>
+                                                <li>Go to Admin → Assessment Forms → Create New Form</li>
+                                                <li>Create separate forms for reviewers and self-assessments</li>
+                                                <li>Add questions with rating scales, text fields, or multiple choice</li>
+                                                <li>Organize questions by categories (Finance, Strategy, Operations, etc.)</li>
+                                                <li>Activate forms when ready</li>
+                                            </ol>
+                                            <div class="alert alert-warning">
+                                                <strong>IMPORTANT:</strong> Assessment forms must be created BEFORE assessment projects. You need separate forms for reviewers and self-assessments.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 2 -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step2">
+                                            <span class="badge bg-primary me-3">2</span>Create Assessment Project
+                                        </button>
+                                    </h2>
+                                    <div id="step2" class="accordion-collapse collapse" data-bs-parent="#workflowAccordion">
+                                        <div class="accordion-body">
+                                            <h6>What You Do:</h6>
+                                            <ol>
+                                                <li>Go to Admin → Assessment Projects → Create New Project</li>
+                                                <li>Set project name, description, start/end dates, and due date</li>
+                                                <li>Assign assessment forms (reviewer forms and self-review forms)</li>
+                                                <li>Activate the project</li>
+                                            </ol>
+                                            <div class="alert alert-info">
+                                                <strong>Tip:</strong> Only one assessment project can be active at a time. Forms must exist before creating projects.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3 -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step3">
+                                            <span class="badge bg-primary me-3">3</span>Create Assignment Matrix
+                                        </button>
+                                    </h2>
+                                    <div id="step3" class="accordion-collapse collapse" data-bs-parent="#workflowAccordion">
+                                        <div class="accordion-body">
+                                            <h6>What You Do:</h6>
+                                            <ol>
+                                                <li>Go to Assessment Project → Assignments</li>
+                                                <li>Use the matrix interface to assign reviewers to officers</li>
+                                                <li>Check self-assessment boxes (automatically pre-selected)</li>
+                                                <li>Assign external reviewers (board members, peers)</li>
+                                                <li>Save assignments</li>
+                                            </ol>
+                                            <h6>What Officers Do:</h6>
+                                            <ul>
+                                                <li>Receive notification about self-assessment</li>
+                                                <li>Complete their self-evaluation form</li>
+                                                <li>Submit for admin approval</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 4 -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step4">
+                                            <span class="badge bg-primary me-3">4</span>Admin Approval Process
+                                        </button>
+                                    </h2>
+                                    <div id="step4" class="accordion-collapse collapse" data-bs-parent="#workflowAccordion">
+                                        <div class="accordion-body">
+                                            <h6>What You Do:</h6>
+                                            <ol>
+                                                <li>Monitor Assessment Progress dashboard</li>
+                                                <li>Review completed self-assessments</li>
+                                                <li>Approve or request revisions</li>
+                                                <li>Release assignments to external reviewers</li>
+                                            </ol>
+                                            <h6>What Reviewers Do:</h6>
+                                            <ul>
+                                                <li>Receive notification about review assignments</li>
+                                                <li>Access "My Assignments" page</li>
+                                                <li>Complete evaluation forms for assigned officers</li>
+                                                <li>Submit reviews</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 5 -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#step5">
+                                            <span class="badge bg-primary me-3">5</span>Final Review & Reports
+                                        </button>
+                                    </h2>
+                                    <div id="step5" class="accordion-collapse collapse" data-bs-parent="#workflowAccordion">
+                                        <div class="accordion-body">
+                                            <h6>What You Do:</h6>
+                                            <ol>
+                                                <li>Monitor completion status in Officer Assessment Progress</li>
+                                                <li>Review completed assessments</li>
+                                                <li>Generate AI-powered analysis reports</li>
+                                                <li>Download PDF reports</li>
+                                                <li>Conduct final approval if needed</li>
+                                            </ol>
+                                            <div class="alert alert-success">
+                                                <strong>Result:</strong> Complete 360-degree performance evaluation with comprehensive AI analysis.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Section -->
+            <div class="card border-0 shadow-sm mb-4" id="user-management">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users me-2"></i>User Management
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Adding New Users</h5>
+                            <ol>
+                                <li>Go to Admin → User Management</li>
+                                <li>Click "Add New User"</li>
+                                <li>Fill in user details:
+                                    <ul>
+                                        <li>Name and email</li>
+                                        <li>Role (Admin, Board Member, Officer)</li>
+                                        <li>Password (will be provided securely)</li>
+                                    </ul>
+                                </li>
+                                <li>Save and activate user</li>
+                            </ol>
+
+                            <h5>Managing Existing Users</h5>
+                            <ul>
+                                <li><strong>View Passwords:</strong> Click eye icon to view/copy passwords</li>
+                                <li><strong>Activate/Deactivate:</strong> Use toggle buttons</li>
+                                <li><strong>Delete Users:</strong> Requires confirmation and shows data impact</li>
+                                <li><strong>Export/Import:</strong> Use Excel files for bulk operations</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>User Roles Explained</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="text-primary">Administrators</h6>
+                                    <p>Full system access, can manage all aspects</p>
+                                    
+                                    <h6 class="text-success">Board Members</h6>
+                                    <p>Can review officers, access "My Assignments"</p>
+                                    
+                                    <h6 class="text-warning">Officers</h6>
+                                    <p>Complete self-assessments, view their own results</p>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning mt-3">
+                                <strong>Security Note:</strong> Inactive users cannot log in but their historical data is preserved.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Features Section -->
+            <div class="card border-0 shadow-sm mb-4" id="system-features">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Advanced System Features
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h5>Activity Monitoring</h5>
+                            <ul>
+                                <li>View Activity Logs for complete audit trail</li>
+                                <li>Filter by user, action type, date range</li>
+                                <li>Export activity data to Excel</li>
+                                <li>Monitor real-time user activities</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>AI-Powered Features</h5>
+                            <ul>
+                                <li>Generate comprehensive AI analysis reports</li>
+                                <li>AI Chatbot for database queries</li>
+                                <li>Automated sentiment analysis</li>
+                                <li>Performance insights and recommendations</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Data Management</h5>
+                            <ul>
+                                <li>Export assessment data to Excel/PDF</li>
+                                <li>Import users and questions from Excel</li>
+                                <li>Database backup and restoration</li>
+                                <li>Assessment form templates</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5>Troubleshooting Common Issues</h5>
+                    <div class="accordion" id="troubleshootingAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue1">
+                                    Self-assessments not showing in matrix
+                                </button>
+                            </h2>
+                            <div id="issue1" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Solution:</strong> Ensure both reviewer and self-review forms are assigned to the assessment project. Check that self-assessment assignments exist in the assignment matrix.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue2">
+                                    AI reports not generating
+                                </button>
+                            </h2>
+                            <div id="issue2" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Solution:</strong> Ensure assessments are completed with both ratings and text feedback. Check that OpenAI API key is configured. Try regenerating the report.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue3">
+                                    Users cannot access assignments
+                                </button>
+                            </h2>
+                            <div id="issue3" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Solution:</strong> Verify user accounts are active, assignments are properly created, and the assessment project is active. Check user roles match their assigned tasks.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Help JavaScript -->
+<script>
+const helpDatabase = {
+    "create assessment forms": {
+        title: "How to Create Assessment Forms (MUST BE DONE FIRST)",
+        steps: [
+            "Navigate to Admin → Assessment Forms",
+            "Click 'Create New Form' button",
+            "Enter form title (e.g., 'Executive Review Form')",
+            "Add description explaining the form's purpose",
+            "Set form as active",
+            "Add questions using question builder (rating scales, text fields, multiple choice)",
+            "Organize questions by categories (Finance, Strategy, Operations, Culture, External)",
+            "Create separate forms for reviewers and self-assessments",
+            "Preview and test forms before using in projects"
+        ]
+    },
+    "create forms": {
+        title: "How to Create Assessment Forms (MUST BE DONE FIRST)",
+        steps: [
+            "Navigate to Admin → Assessment Forms",
+            "Click 'Create New Form' button",
+            "Enter form title (e.g., 'Executive Review Form')",
+            "Add description explaining the form's purpose",
+            "Set form as active",
+            "Add questions using question builder (rating scales, text fields, multiple choice)",
+            "Organize questions by categories (Finance, Strategy, Operations, Culture, External)",
+            "Create separate forms for reviewers and self-assessments",
+            "Preview and test forms before using in projects"
+        ]
+    },
+    "manage forms": {
+        title: "How to Manage Assessment Forms",
+        steps: [
+            "Go to Admin → Assessment Forms",
+            "View all existing forms with status indicators",
+            "Edit existing forms by clicking 'Edit' button",
+            "Add, modify, or delete questions as needed",
+            "Activate/deactivate forms using toggle buttons",
+            "Export forms to Excel for backup or sharing",
+            "Import forms from Excel files",
+            "Clone forms to create similar versions quickly"
+        ]
+    },
+    "create project": {
+        title: "How to Create an Assessment Project (AFTER CREATING FORMS)",
+        steps: [
+            "FIRST: Ensure assessment forms are created and active",
+            "Navigate to Admin → Assessment Projects",
+            "Click 'Create New Assessment Project'",
+            "Fill in project details (name, description, dates)",
+            "Select assessment forms for reviewers and self-review",
+            "Activate the project",
+            "Set up assignment matrix with reviewers and officers"
+        ]
+    },
+    "add users": {
+        title: "How to Add New Users",
+        steps: [
+            "Go to Admin → User Management",
+            "Click 'Add New User' button",
+            "Enter user information (name, email, role)",
+            "Set initial password",
+            "Activate the user account",
+            "User can now log in with provided credentials"
+        ]
+    },
+    "assignment matrix": {
+        title: "Setting Up Assignment Matrix",
+        steps: [
+            "Go to active Assessment Project → Assignments",
+            "Use matrix interface with officers in rows, reviewers in columns",
+            "Check self-assessment boxes (pre-selected on diagonal)",
+            "Select external reviewers for each officer",
+            "Click 'Save Assignments'",
+            "Assignments will be created and users notified"
+        ]
+    },
+    "ai reports": {
+        title: "Generating AI Reports",
+        steps: [
+            "Ensure assessments are completed with ratings and feedback",
+            "Go to Officer Assessment Progress",
+            "Click 'Officer Reviews' for specific officer",
+            "Click 'Generate AI Summary' button",
+            "Wait for AI analysis to complete",
+            "Download PDF report using download icon"
+        ]
+    },
+    "monitor progress": {
+        title: "Monitoring Assessment Progress",
+        steps: [
+            "Use Officer Assessment Progress table on admin dashboard",
+            "Check completion percentages and status badges",
+            "View timeline visualizations for detailed progress",
+            "Monitor activity logs for real-time updates",
+            "Approve completed self-assessments",
+            "Release reviewer assignments when ready"
+        ]
+    },
+    "manage forms": {
+        title: "Managing Assessment Forms",
+        steps: [
+            "Go to Admin → Assessment Forms",
+            "Create new forms or edit existing ones",
+            "Add questions with appropriate types (rating, text, multiple choice)",
+            "Organize questions by categories",
+            "Activate forms when ready for use",
+            "Assign forms to assessment projects"
+        ]
+    }
+};
+
+function quickHelp(query) {
+    document.getElementById('helpQuery').value = query;
+    getHelp();
+}
+
+function getHelp() {
+    const query = document.getElementById('helpQuery').value.toLowerCase();
+    const helpResponse = document.getElementById('helpResponse');
+    const helpContent = document.getElementById('helpContent');
+    
+    // Simple keyword matching
+    let response = null;
+    for (const [key, value] of Object.entries(helpDatabase)) {
+        if (query.includes(key) || key.includes(query)) {
+            response = value;
+            break;
+        }
+    }
+    
+    if (response) {
+        helpContent.innerHTML = `
+            <h5 class="text-primary">${response.title}</h5>
+            <ol class="mb-0">
+                ${response.steps.map(step => `<li>${step}</li>`).join('')}
+            </ol>
+        `;
+        helpResponse.style.display = 'block';
+    } else {
+        helpContent.innerHTML = `
+            <h5 class="text-warning">No specific help found</h5>
+            <p>Try these common queries:</p>
+            <ul>
+                <li>"create project" - Learn how to create assessment projects</li>
+                <li>"add users" - User management instructions</li>
+                <li>"assignment matrix" - Setting up reviewer assignments</li>
+                <li>"ai reports" - Generating AI analysis reports</li>
+                <li>"monitor progress" - Tracking assessment progress</li>
+                <li>"manage forms" - Assessment form management</li>
+            </ul>
+        `;
+        helpResponse.style.display = 'block';
+    }
+}
+
+// Enable Enter key for help search
+document.getElementById('helpQuery').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        getHelp();
+    }
+});
+</script>
+
+<style>
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+.btn {
+    border-radius: 6px;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Create Assessment Project - AAAPerformanceTracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-calendar-plus me-2"></i>Create Assessment Project
+                </h1>
+                <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Projects
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Project Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Examples: "Q4 2025 Annual Review", "Mid-Year Performance Assessment 2025"</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Optional: Brief description of this assessment project's focus or goals</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.start_date.label(class="form-label") }}
+                                    {{ form.start_date(class="form-control") }}
+                                    {% if form.start_date.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.start_date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.end_date.label(class="form-label") }}
+                                    {{ form.end_date(class="form-control") }}
+                                    {% if form.end_date.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.end_date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.due_date.label(class="form-label") }}
+                                    {{ form.due_date(class="form-control") }}
+                                    <div class="form-text">Optional: When assessments should be completed</div>
+                                    {% if form.due_date.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.due_date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Assessment Form Configuration -->
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>Assessment Form Configuration
+                                </h6>
+                                <small class="text-muted">Select which forms will be used for different types of assessments</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.reviewer_form_ids.label(class="form-label") }}
+                                            {{ form.reviewer_form_ids(class="form-select", multiple=True, size="5") }}
+                                            {% if form.reviewer_form_ids.errors %}
+                                                <div class="text-danger small mt-1">
+                                                    {% for error in form.reviewer_form_ids.errors %}{{ error }}{% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Reviewers will use these forms to evaluate reviewees
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.self_review_form_ids.label(class="form-label") }}
+                                            {{ form.self_review_form_ids(class="form-select", multiple=True, size="5") }}
+                                            {% if form.self_review_form_ids.errors %}
+                                                <div class="text-danger small mt-1">
+                                                    {% for error in form.self_review_form_ids.errors %}{{ error }}{% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Reviewees will use these forms for self-assessment
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Note:</strong> You can select multiple forms for each type. If no forms are selected now, you can assign them later using the "Assign Forms to Period" feature.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Selection -->
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-users me-2"></i>User Selection for This Project
+                                </h6>
+                                <small class="text-muted">Select which users will participate in this assessment project</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.selected_reviewees.label(class="form-label") }}
+                                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                                {% for subfield in form.selected_reviewees %}
+                                                <div class="form-check">
+                                                    {{ subfield(class="form-check-input") }}
+                                                    {{ subfield.label(class="form-check-label") }}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% if form.selected_reviewees.errors %}
+                                                <div class="text-danger small mt-1">
+                                                    {% for error in form.selected_reviewees.errors %}{{ error }}{% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Only selected users will appear in the assignment matrix
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.selected_reviewers.label(class="form-label") }}
+                                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                                {% for subfield in form.selected_reviewers %}
+                                                <div class="form-check">
+                                                    {{ subfield(class="form-check-input") }}
+                                                    {{ subfield.label(class="form-check-label") }}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% if form.selected_reviewers.errors %}
+                                                <div class="text-danger small mt-1">
+                                                    {% for error in form.selected_reviewers.errors %}{{ error }}{% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Selected reviewers can evaluate the reviewees
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-success">
+                                    <i class="fas fa-magic me-2"></i>
+                                    <strong>Smart Assignment:</strong> Self-assessments will be automatically created for reviewees who are also in the reviewers list when you assign reviews.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-4">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-lightbulb me-2"></i>Next Steps
+                            </h6>
+                            <p class="mb-0">After creating this project:</p>
+                            <ul class="mb-0 mt-2">
+                                <li>Use the assignment matrix to assign specific reviewers to reviewees</li>
+                                <li>Self-assessments will be created automatically for eligible reviewees</li>
+                                <li>Send notifications to assigned reviewers</li>
+                                <li>Monitor assessment progress and completion</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-calculate end date when start date changes
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    startDateInput.addEventListener('change', function() {
+        if (this.value && !endDateInput.value) {
+            const startDate = new Date(this.value);
+            // Set end date to December 31st of the same year
+            const endDate = new Date(startDate.getFullYear(), 11, 31); // Month 11 = December
+            
+            const year = endDate.getFullYear();
+            const month = String(endDate.getMonth() + 1).padStart(2, '0');
+            const day = String(endDate.getDate()).padStart(2, '0');
+            
+            endDateInput.value = `${year}-${month}-${day}`;
+        }
+    });
+});
+</script>
+{% endblock %}

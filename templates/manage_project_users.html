@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Manage {{ user_type }} - {{ period.name }} - AAAPerformanceTracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-{{ icon }} me-2"></i>Manage {{ user_type }}
+                </h1>
+                <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Projects
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-1">
+                        <i class="fas fa-{{ icon }} me-2"></i>{{ user_type }} for "{{ period.name }}"
+                    </h5>
+                    <small class="text-muted">{{ description }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.selected_reviewees.label.text if user_type == 'Reviewees' else form.selected_reviewers.label.text }}</label>
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                {% if user_type == 'Reviewees' %}
+                                <strong>Reviewees</strong> are the people who will be evaluated in this assessment project. Typically officers and administrators.
+                                {% else %}
+                                <strong>Reviewers</strong> are the people who will conduct the evaluations. Can include board members, administrators, and officers.
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Search Filter -->
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" id="userSearch" class="form-control" placeholder="Search users by name..." oninput="filterUsers()">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearSearch()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Type to filter the list below</small>
+                            </div>
+                            
+                            <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+                                <div id="userList">
+                                    {% if user_type == 'Reviewees' %}
+                                        {% for subfield in form.selected_reviewees %}
+                                        <div class="form-check mb-2 user-item" data-name="{{ subfield.label.text.lower() }}">
+                                            {{ subfield(class="form-check-input") }}
+                                            {{ subfield.label(class="form-check-label") }}
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        {% for subfield in form.selected_reviewers %}
+                                        <div class="form-check mb-2 user-item" data-name="{{ subfield.label.text.lower() }}">
+                                            {{ subfield(class="form-check-input") }}
+                                            {{ subfield.label(class="form-check-label") }}
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <div id="noResults" class="text-center text-muted py-3" style="display: none;">
+                                    <i class="fas fa-search me-2"></i>No users found matching your search.
+                                </div>
+                            </div>
+                            
+                            {% if user_type == 'Reviewees' and form.selected_reviewees.errors %}
+                                <div class="text-danger small mt-2">
+                                    {% for error in form.selected_reviewees.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% elif user_type == 'Reviewers' and form.selected_reviewers.errors %}
+                                <div class="text-danger small mt-2">
+                                    {% for error in form.selected_reviewers.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="selectAll()">
+                                        <i class="fas fa-check-double me-1"></i>Select All
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="clearAll()">
+                                        <i class="fas fa-times me-1"></i>Clear All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> After updating {{ user_type.lower() }}, you'll need to use the assignment matrix to specify which reviewers evaluate which reviewees.
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.user-item:not([style*="display: none"]) input[type="checkbox"]');
+    checkboxes.forEach(checkbox => checkbox.checked = true);
+}
+
+function clearAll() {
+    const checkboxes = document.querySelectorAll('.user-item:not([style*="display: none"]) input[type="checkbox"]');
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+}
+
+function filterUsers() {
+    const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+    const userItems = document.querySelectorAll('.user-item');
+    const noResults = document.getElementById('noResults');
+    let visibleCount = 0;
+    
+    userItems.forEach(item => {
+        const userName = item.getAttribute('data-name');
+        if (userName.includes(searchTerm)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Show/hide no results message
+    if (visibleCount === 0 && searchTerm.length > 0) {
+        noResults.style.display = 'block';
+    } else {
+        noResults.style.display = 'none';
+    }
+}
+
+function clearSearch() {
+    document.getElementById('userSearch').value = '';
+    filterUsers();
+    document.getElementById('userSearch').focus();
+}
+
+// Sort user items alphabetically on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const userList = document.getElementById('userList');
+    const userItems = Array.from(document.querySelectorAll('.user-item'));
+    
+    // Sort by name
+    userItems.sort((a, b) => {
+        const nameA = a.getAttribute('data-name');
+        const nameB = b.getAttribute('data-name');
+        return nameA.localeCompare(nameB);
+    });
+    
+    // Clear and re-append in sorted order
+    userList.innerHTML = '';
+    userItems.forEach(item => userList.appendChild(item));
+});
+</script>
+{% endblock %}

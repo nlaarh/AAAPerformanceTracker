@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Form{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        {% if assignment.officer_id == assignment.reviewer_id %}
+                            Self Assessment
+                        {% else %}
+                            Review Assessment
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if assignment.officer_id == assignment.reviewer_id %}
+                            Complete your self-evaluation for {{ assignment.period.name }}
+                        {% else %}
+                            Your evaluation of {{ assignment.officer.name }} for {{ assignment.period.name }}
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{{ url_for('my_tasks') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to My Tasks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Form -->
+    <form method="POST" id="assessmentForm">
+        {% if assignment.officer_id != assignment.reviewer_id and self_assessment_data %}
+        <!-- Side-by-side layout for external reviewers -->
+        <div class="row">
+            <!-- Left side: Self-Assessment (Read-Only) -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user text-primary me-2"></i>{{ assignment.officer.name }}'s Self-Assessment
+                        </h5>
+                        <small class="text-muted">Reference - Read Only</small>
+                    </div>
+                    <div class="card-body" style="max-height: 700px; overflow-y: auto;">
+                        {% if self_assessment_questions %}
+                            {% for question in self_assessment_questions %}
+                                {% set self_response = self_assessment_data.get(question.id) %}
+                                <div class="mb-4 border-bottom pb-3">
+                                    <label class="form-label fw-bold text-muted">
+                                        {{ question.question_name }}
+                                    </label>
+                                    
+                                    {% if question.question_text != question.question_name %}
+                                        <p class="text-muted small mb-2">{{ question.question_text }}</p>
+                                    {% endif %}
+
+                                    {% if question.question_type == 'rating' %}
+                                        <div class="mb-2">
+                                            {% if self_response and self_response.response_number %}
+                                                <span class="badge bg-primary fs-6">{{ self_response.response_number }}</span>
+                                            {% else %}
+                                                <span class="text-muted">Not answered</span>
+                                            {% endif %}
+                                        </div>
+                                    {% elif question.question_type in ['text', 'textarea'] %}
+                                        <div class="p-3 bg-light rounded">
+                                            {% if self_response and self_response.response_text %}
+                                                {{ self_response.response_text }}
+                                            {% else %}
+                                                <span class="text-muted">Not answered</span>
+                                            {% endif %}
+                                        </div>
+                                    {% elif question.question_type == 'boolean' %}
+                                        <div class="mb-2">
+                                            {% if self_response and self_response.response_boolean is not none %}
+                                                <span class="badge bg-{{ 'success' if self_response.response_boolean else 'secondary' }}">
+                                                    {{ 'Yes' if self_response.response_boolean else 'No' }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">Not answered</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No self-assessment data available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right side: Reviewer Assessment Form -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-edit text-success me-2"></i>Your Assessment
+                        </h5>
+                        {% if target_form.description %}
+                            <p class="text-muted mb-0 mt-1">{{ target_form.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-body" style="max-height: 700px; overflow-y: auto;">
+                        <!-- Reviewer form questions -->
+                        {% for question in questions %}
+                            {% set existing_response = existing_responses.get(question.id) %}
+                            {% set settings = question.get_settings() if question.settings else {} %}
+                            
+                            <div class="mb-4 border-bottom pb-3">
+                                <label class="form-label fw-bold">
+                                    {{ question.question_name }}
+                                    {% if question.is_required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                {% if question.question_text != question.question_name %}
+                                    <p class="text-muted small mb-2">{{ question.question_text }}</p>
+                                {% endif %}
+
+                                {% if question.question_type == 'rating' %}
+                                    <!-- Rating Question -->
+                                    <div class="mb-3">
+                                        <div class="d-flex gap-3 align-items-center mb-2">
+                                            {% set max_rating = settings.get('max_rating', 5) %}
+                                            {% for i in range(1, max_rating + 1) %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" 
+                                                           name="question_{{ question.id }}" 
+                                                           id="question_{{ question.id }}_{{ i }}" 
+                                                           value="{{ i }}"
+                                                           {% if existing_response and existing_response.response_number == i %}checked{% endif %}>
+                                                    <label class="form-check-label" for="question_{{ question.id }}_{{ i }}">
+                                                        {{ i }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">1 = Poor, {{ max_rating }} = Excellent</small>
+                                    </div>
+
+                                {% elif question.question_type == 'text' %}
+                                    <!-- Text Question -->
+                                    <input type="text" class="form-control" name="question_{{ question.id }}" 
+                                           value="{% if existing_response %}{{ existing_response.response_text or '' }}{% endif %}"
+                                           {% if question.is_required %}required{% endif %}
+                                           maxlength="{{ settings.get('max_characters', 500) }}">
+                                    <small class="text-muted">Maximum {{ settings.get('max_characters', 500) }} characters</small>
+
+                                {% elif question.question_type == 'textarea' %}
+                                    <!-- Textarea Question -->
+                                    <textarea class="form-control" name="question_{{ question.id }}" 
+                                              rows="{{ settings.get('rows', 4) }}" 
+                                              {% if question.is_required %}required{% endif %}
+                                              maxlength="{{ settings.get('max_characters', 2000) }}"
+                                              placeholder="Enter your response...">{% if existing_response %}{{ existing_response.response_text or '' }}{% endif %}</textarea>
+                                    <small class="text-muted">Maximum {{ settings.get('max_characters', 2000) }} characters</small>
+
+                                {% elif question.question_type == 'boolean' %}
+                                    <!-- Boolean Question -->
+                                    <div class="d-flex gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="question_{{ question.id }}_true" 
+                                                   value="true"
+                                                   {% if existing_response and existing_response.response_boolean == true %}checked{% endif %}>
+                                            <label class="form-check-label" for="question_{{ question.id }}_true">
+                                                Yes
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="question_{{ question.id }}_false" 
+                                                   value="false"
+                                                   {% if existing_response and existing_response.response_boolean == false %}checked{% endif %}>
+                                            <label class="form-check-label" for="question_{{ question.id }}_false">
+                                                No
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                {% elif question.question_type == 'date' %}
+                                    <!-- Date Question -->
+                                    <input type="date" class="form-control" name="question_{{ question.id }}" 
+                                           value="{% if existing_response and existing_response.response_date %}{{ existing_response.response_date.strftime('%Y-%m-%d') }}{% endif %}"
+                                           {% if question.is_required %}required{% endif %}>
+
+                                {% elif question.question_type == 'dropdown' %}
+                                    <!-- Dropdown Question -->
+                                    <select class="form-select" name="question_{{ question.id }}" 
+                                            {% if question.is_required %}required{% endif %}>
+                                        <option value="">Select an option...</option>
+                                        {% for option in settings.get('options', []) %}
+                                            <option value="{{ option }}" 
+                                                    {% if existing_response and existing_response.response_text == option %}selected{% endif %}>
+                                                {{ option }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+
+                                {% elif question.question_type == 'multiple_choice' %}
+                                    <!-- Multiple Choice Question -->
+                                    {% for option in settings.get('options', []) %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="question_{{ question.id }}_{{ loop.index }}" 
+                                                   value="{{ option }}"
+                                                   {% if existing_response and existing_response.response_text == option %}checked{% endif %}>
+                                            <label class="form-check-label" for="question_{{ question.id }}_{{ loop.index }}">
+                                                {{ option }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+
+                                {% else %}
+                                    <!-- Default text input for unknown types -->
+                                    <input type="text" class="form-control" name="question_{{ question.id }}" 
+                                           value="{% if existing_response %}{{ existing_response.response_text or '' }}{% endif %}"
+                                           {% if question.is_required %}required{% endif %}>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Standard single-column layout for self-assessments -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">{{ target_form.title }}</h5>
+                        {% if target_form.description %}
+                            <p class="text-muted mb-0 mt-1">{{ target_form.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% for question in questions %}
+                            {% set existing_response = existing_responses.get(question.id) %}
+                            {% set settings = question.get_settings() if question.settings else {} %}
+                            
+                            <div class="mb-4 border-bottom pb-3">
+                                <label class="form-label fw-bold">
+                                    {{ question.question_name }}
+                                    {% if question.is_required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                {% if question.question_text != question.question_name %}
+                                    <p class="text-muted small mb-2">{{ question.question_text }}</p>
+                                {% endif %}
+
+                                {% if question.question_type == 'rating' %}
+                                    <!-- Rating Question -->
+                                    <div class="mb-3">
+                                        <div class="d-flex gap-3 align-items-center mb-2">
+                                            {% set max_rating = settings.get('max_rating', 5) %}
+                                            {% for i in range(1, max_rating + 1) %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" 
+                                                           name="question_{{ question.id }}" 
+                                                           id="question_{{ question.id }}_{{ i }}" 
+                                                           value="{{ i }}"
+                                                           {% if existing_response and existing_response.response_number == i %}checked{% endif %}>
+                                                    <label class="form-check-label" for="question_{{ question.id }}_{{ i }}">
+                                                        {{ i }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">1 = Poor, {{ max_rating }} = Excellent</small>
+                                    </div>
+
+                                {% elif question.question_type == 'text' %}
+                                    <!-- Text Question -->
+                                    <input type="text" class="form-control" name="question_{{ question.id }}" 
+                                           value="{% if existing_response %}{{ existing_response.response_text or '' }}{% endif %}"
+                                           {% if question.is_required %}required{% endif %}
+                                           maxlength="{{ settings.get('max_characters', 500) }}">
+                                    <small class="text-muted">Maximum {{ settings.get('max_characters', 500) }} characters</small>
+
+                                {% elif question.question_type == 'textarea' %}
+                                    <!-- Textarea Question -->
+                                    <textarea class="form-control" name="question_{{ question.id }}" 
+                                              rows="{{ settings.get('rows', 4) }}" 
+                                              {% if question.is_required %}required{% endif %}
+                                              maxlength="{{ settings.get('max_characters', 2000) }}"
+                                              placeholder="Enter your response...">{% if existing_response %}{{ existing_response.response_text or '' }}{% endif %}</textarea>
+                                    <small class="text-muted">Maximum {{ settings.get('max_characters', 2000) }} characters</small>
+
+                                {% elif question.question_type == 'boolean' %}
+                                    <!-- Boolean Question -->
+                                    <div class="d-flex gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="question_{{ question.id }}_true" 
+                                                   value="true"
+                                                   {% if existing_response and existing_response.response_boolean == true %}checked{% endif %}>
+                                            <label class="form-check-label" for="question_{{ question.id }}_true">
+                                                Yes
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="question_{{ question.id }}_false" 
+                                                   value="false"
+                                                   {% if existing_response and existing_response.response_boolean == false %}checked{% endif %}>
+                                            <label class="form-check-label" for="question_{{ question.id }}_false">
+                                                No
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                {% elif question.question_type == 'date' %}
+                                    <!-- Date Question -->
+                                    <input type="date" class="form-control" name="question_{{ question.id }}" 
+                                           value="{% if existing_response and existing_response.response_date %}{{ existing_response.response_date.strftime('%Y-%m-%d') }}{% endif %}"
+                                           {% if question.is_required %}required{% endif %}>
+
+                                {% elif question.question_type == 'dropdown' %}
+                                    <!-- Dropdown Question -->
+                                    <select class="form-select" name="question_{{ question.id }}" 
+                                            {% if question.is_required %}required{% endif %}>
+                                        <option value="">Select an option...</option>
+                                        {% for option in settings.get('options', []) %}
+                                            <option value="{{ option }}" 
+                                                    {% if existing_response and existing_response.response_text == option %}selected{% endif %}>
+                                                {{ option }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+
+                                {% elif question.question_type == 'multiple_choice' %}
+                                    <!-- Multiple Choice Question -->
+                                    {% for option in settings.get('options', []) %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question.id }}" 
+                                                   id="question_{{ question.id }}_{{ loop.index }}" 
+                                                   value="{{ option }}"
+                                                   {% if existing_response and existing_response.response_text == option %}checked{% endif %}>
+                                            <label class="form-check-label" for="question_{{ question.id }}_{{ loop.index }}">
+                                                {{ option }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+
+                                {% else %}
+                                    <!-- Default text input for unknown types -->
+                                    <input type="text" class="form-control" name="question_{{ question.id }}" 
+                                           value="{% if existing_response %}{{ existing_response.response_text or '' }}{% endif %}"
+                                           {% if question.is_required %}required{% endif %}>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit Section -->
+        <div class="row mt-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Save Your Progress</h5>
+                        <p class="text-muted mb-3">
+                            <strong>Save Draft:</strong> Save your progress and continue editing later.<br>
+                            <strong>Submit Assessment:</strong> Send to administrator for review (you won't be able to edit after submission).
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button type="button" id="saveDraftBtn" class="btn btn-outline-secondary">
+                                <i class="fas fa-save me-1"></i>Save Draft
+                            </button>
+                            <button type="submit" name="action" value="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Submit Assessment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-save functionality
+let autoSaveTimeout;
+
+function triggerAutoSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(function() {
+        // Could implement auto-save here in the future
+        console.log('Auto-save triggered');
+    }, 30000); // Auto-save after 30 seconds of inactivity
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Assessment form loaded');
+    
+    // Add change listeners for auto-save trigger
+    const formInputs = document.querySelectorAll('input, textarea, select');
+    formInputs.forEach(input => {
+        input.addEventListener('change', triggerAutoSave);
+        input.addEventListener('input', triggerAutoSave);
+    });
+    
+    // Handle Save Draft button click
+    document.getElementById('saveDraftBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const form = document.querySelector('form');
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'save_draft';
+        form.appendChild(actionInput);
+        
+        form.submit();
+    });
+    
+    // Handle Submit Assessment button with confirmation
+    const submitButton = document.querySelector('button[value="submit"]');
+    if (submitButton) {
+        submitButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Show detailed confirmation dialog
+            const confirmMessage = `⚠️ IMPORTANT CONFIRMATION ⚠️
+
+Are you ready to submit this assessment for admin review?
+
+Once submitted:
+• You will NOT be able to edit your responses
+• The assessment will be sent to admin for approval
+• Changes can only be made if admin sends it back for revision
+
+Do you want to proceed with submission?`;
+            
+            if (confirm(confirmMessage)) {
+                // User confirmed, submit the form
+                const form = document.querySelector('form');
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'submit';
+                form.appendChild(actionInput);
+                form.submit();
+            }
+            // If user cancels, do nothing (stay on form)
+        });
+    }
+});
+</script>
+
+{% endblock %}

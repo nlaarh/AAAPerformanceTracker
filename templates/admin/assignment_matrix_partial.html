@@ -1,0 +1,148 @@
+<!-- Assignment Matrix for Modal -->
+<div class="p-4">
+    <form id="assignmentForm" method="POST" action="{{ url_for('manage_assignments', period_id=period.id) }}">
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <h6>Assignment Matrix for: <strong>{{ period.name }}</strong></h6>
+                <p class="text-muted mb-0">Check boxes to assign reviewers to officers. Self-assessments are pre-selected.</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group mb-2" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllSelfModal()">
+                        <i class="fas fa-user-check me-1"></i>Select All Self
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllModal()">
+                        <i class="fas fa-check-square me-1"></i>Select All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="showClearAllConfirmationModal()">
+                        <i class="fas fa-times me-1"></i>Clear All
+                    </button>
+                </div>
+                <div>
+                    <small class="text-muted">Selected: <span id="selectionCountModal">0</span></small>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th style="width: 150px;">Officer / Reviewer</th>
+                        {% for reviewer in reviewers %}
+                            <th class="text-center" style="width: 80px;">
+                                <div class="small">{{ reviewer.name.split()[0] }}</div>
+                                <div class="text-muted" style="font-size: 0.7em;">{{ reviewer.role.replace('_', ' ').title() }}</div>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for officer in officers %}
+                        <tr>
+                            <td class="fw-bold align-middle">
+                                {{ officer.name }}
+                                <div class="text-muted small">{{ officer.email }}</div>
+                            </td>
+                            {% for reviewer in reviewers %}
+                                <td class="text-center align-middle">
+                                    {% set assignment_key = officer.id ~ '_' ~ reviewer.id %}
+                                    {% set existing_assignment = assignment_map.get(assignment_key) %}
+                                    {% set is_self_assessment = (officer.id == reviewer.id) %}
+                                    {% set is_checked = existing_assignment is not none %}
+                                    {% set is_completed = existing_assignment and existing_assignment.is_completed %}
+                                    
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input assignment-checkbox-modal" 
+                                               type="checkbox" 
+                                               name="assignments" 
+                                               value="{{ officer.id }}_{{ reviewer.id }}"
+                                               id="assignment_{{ officer.id }}_{{ reviewer.id }}_modal"
+                                               {% if is_checked %}checked{% endif %}
+                                               {% if is_completed %}disabled title="Assessment completed"{% endif %}
+                                               onchange="updateSelectionCountModal()">
+                                        
+                                        {% if is_self_assessment %}
+                                            <span class="badge bg-info badge-sm">Self</span>
+                                        {% endif %}
+                                        
+                                        {% if is_completed %}
+                                            <span class="badge bg-success badge-sm">Done</span>
+                                        {% elif is_checked and not is_completed %}
+                                            <span class="badge bg-warning badge-sm">Pending</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col">
+                <div class="alert alert-info">
+                    <small><i class="fas fa-info-circle me-1"></i>
+                    <strong>Self</strong> = Self-assessment, 
+                    <strong>Done</strong> = Completed assessment (cannot be unchecked), 
+                    <strong>Pending</strong> = Assigned but not completed
+                    </small>
+                </div>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Save Assignments
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Modal-specific functions to avoid conflicts with main page
+function updateSelectionCountModal() {
+    const checkedBoxes = document.querySelectorAll('.assignment-checkbox-modal:checked');
+    document.getElementById('selectionCountModal').textContent = checkedBoxes.length;
+}
+
+function selectAllSelfModal() {
+    document.querySelectorAll('.assignment-checkbox-modal').forEach(checkbox => {
+        // Check if this is a self-assessment (officer_id == reviewer_id)
+        const value = checkbox.value;
+        const [officerId, reviewerId] = value.split('_');
+        if (officerId === reviewerId && !checkbox.disabled) {
+            checkbox.checked = true;
+        }
+    });
+    updateSelectionCountModal();
+}
+
+function selectAllModal() {
+    document.querySelectorAll('.assignment-checkbox-modal').forEach(checkbox => {
+        if (!checkbox.disabled) {
+            checkbox.checked = true;
+        }
+    });
+    updateSelectionCountModal();
+}
+
+function showClearAllConfirmationModal() {
+    if (confirm('Are you sure you want to clear all assignments? This will remove all uncompleted assignments.')) {
+        document.querySelectorAll('.assignment-checkbox-modal').forEach(checkbox => {
+            if (!checkbox.disabled) {
+                checkbox.checked = false;
+            }
+        });
+        updateSelectionCountModal();
+    }
+}
+
+// Initialize count on load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelectionCountModal();
+});
+</script>

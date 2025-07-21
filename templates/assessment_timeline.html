@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Timeline - {{ officer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-timeline me-2"></i>Assessment Timeline</h2>
+                    <p class="text-muted mb-0">
+                        <strong>{{ officer.name }}</strong> - {{ period.name }}
+                        <span class="badge bg-info ms-2">{{ period.start_date.strftime('%b %Y') }} - {{ period.end_date.strftime('%b %Y') }}</span>
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('assessment_dashboard', period_id=period.id) }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-chart-bar me-1"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('admin_main') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Admin
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Workflow Diagram -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="fas fa-route me-2"></i>Assessment Workflow Progress</h5>
+                        </div>
+                        <div class="card-body">
+                            {{ workflow_table|safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Timeline -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Detailed Activity Log</h5>
+                </div>
+                <div class="card-body">
+                    {% if timeline_data.timeline %}
+                    <div class="timeline-detailed">
+                        {% for event in timeline_data.timeline %}
+                        <div class="timeline-event">
+                            <div class="timeline-badge 
+                                {% if event.event_type == 'task_generated' %}bg-info
+                                {% elif event.event_type == 'draft_saved' %}bg-warning
+                                {% elif event.event_type == 'assessment_submitted' %}bg-primary
+                                {% elif event.event_type in ['admin_review_completed', 'final_approval_completed'] %}bg-success
+                                {% elif event.event_type == 'results_released' %}bg-purple
+                                {% elif event.event_type == 'assessment_closed' %}bg-dark
+                                {% else %}bg-secondary{% endif %}">
+                                <i class="fas fa-
+                                    {% if event.event_type == 'task_generated' %}tasks
+                                    {% elif event.event_type == 'draft_saved' %}save
+                                    {% elif event.event_type == 'assessment_submitted' %}paper-plane
+                                    {% elif event.event_type in ['admin_review_started', 'admin_review_completed'] %}user-check
+                                    {% elif event.event_type == 'reviewers_released' %}rocket
+                                    {% elif event.event_type in ['final_approval_started', 'final_approval_completed'] %}trophy
+                                    {% elif event.event_type == 'results_released' %}share
+                                    {% elif event.event_type == 'reviewee_acknowledged' %}thumbs-up
+                                    {% elif event.event_type == 'assessment_closed' %}flag-checkered
+                                    {% else %}circle{% endif %}"></i>
+                            </div>
+                            <div class="timeline-panel">
+                                <div class="timeline-heading">
+                                    <h6 class="timeline-title">{{ event.event_type.replace('_', ' ').title() }}</h6>
+                                    <p class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ event.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+                                    </p>
+                                </div>
+                                <div class="timeline-body">
+                                    <p>{{ event.description }}</p>
+                                    <div class="row text-sm">
+                                        {% if event.actor %}
+                                        <div class="col-md-6">
+                                            <strong>Actor:</strong> {{ event.actor }}
+                                        </div>
+                                        {% endif %}
+                                        {% if event.reviewer %}
+                                        <div class="col-md-6">
+                                            <strong>Reviewer:</strong> {{ event.reviewer }}
+                                        </div>
+                                        {% endif %}
+                                        {% if event.status %}
+                                        <div class="col-md-6">
+                                            <strong>Status:</strong> 
+                                            <span class="badge bg-light text-dark">{{ event.status }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% if event.metadata %}
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#details-{{ loop.index }}">
+                                            <i class="fas fa-info-circle me-1"></i>View Details
+                                        </button>
+                                        <div class="collapse mt-2" id="details-{{ loop.index }}">
+                                            <div class="bg-light p-3 rounded">
+                                                <pre class="mb-0">{{ event.metadata | tojson(indent=2) }}</pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Activity Recorded</h5>
+                        <p class="text-muted">Assessment activities will appear here as they occur.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-detailed {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-event {
+    position: relative;
+    margin-bottom: 30px;
+    padding-left: 80px;
+}
+
+.timeline-event:before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: -30px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-event:last-child:before {
+    display: none;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: 10px;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    z-index: 10;
+}
+
+.timeline-panel {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.timeline-panel:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.timeline-heading h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.timeline-heading p {
+    font-size: 0.875rem;
+    margin-bottom: 0;
+}
+
+.timeline-body {
+    margin-top: 15px;
+    color: #6c757d;
+}
+
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+pre {
+    font-size: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    color: #495057;
+}
+
+/* Chart containers */
+.card-body {
+    min-height: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline-event {
+        padding-left: 60px;
+    }
+    
+    .timeline-badge {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+    
+    .timeline-event:before {
+        left: 20px;
+    }
+    
+    .timeline-badge {
+        left: 5px;
+    }
+}
+</style>
+
+<script>
+// Auto-refresh timeline data every 30 seconds
+setInterval(function() {
+    // Optional: Add AJAX refresh functionality here
+    console.log('Timeline refresh check');
+}, 30000);
+
+// Smooth scrolling for timeline events
+document.addEventListener('DOMContentLoaded', function() {
+    const events = document.querySelectorAll('.timeline-event');
+    events.forEach((event, index) => {
+        event.style.animationDelay = `${index * 0.1}s`;
+        event.classList.add('fade-in');
+    });
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+    opacity: 0;
+}
+</style>
+{% endblock %}

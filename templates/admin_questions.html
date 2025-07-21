@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Questions Management{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+<div class="container-fluid px-4 py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1>
+                            <i class="fas fa-cogs me-3 text-accent"></i>Assessment Configuration
+                        </h1>
+                        <p>Manage assessment categories and questions for executive performance evaluation</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('create_category') }}" class="btn-clean-success clean-btn">
+                            <i class="fas fa-plus"></i>New Category
+                        </a>
+                        <a href="{{ url_for('create_question') }}" class="btn-clean-primary clean-btn">
+                            <i class="fas fa-plus"></i>New Question
+                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-1"></i>Export/Import
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('export_questions') }}">
+                                    <i class="fas fa-download me-2"></i>Export to Excel
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{{ url_for('import_questions') }}" method="post" enctype="multipart/form-data" class="px-3 py-2">
+                                        <div class="mb-2">
+                                            <label for="questionFile" class="form-label small">Import Questions:</label>
+                                            <input type="file" class="form-control form-control-sm" id="questionFile" name="file" accept=".xlsx,.xls">
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="fas fa-upload me-1"></i>Import Excel
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories and Questions List -->
+    {% for category in categories %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h4>
+                                <i class="fas fa-folder me-2"></i>{{ category.name }}
+                                {% if not category.is_active %}
+                                    <span class="badge badge-inactive ms-2">Inactive</span>
+                                {% endif %}
+                            </h4>
+                            <p>{{ category.description }}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('edit_category', category_id=category.id) }}" 
+                               class="btn-clean-light clean-btn">
+                                <i class="fas fa-edit"></i>Edit
+                            </a>
+                            <button class="btn-clean-light clean-btn" 
+                                    onclick="moveCategory({{ category.id }}, 'up')"
+                                    {% if loop.first %}disabled{% endif %}>
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button class="btn-clean-light clean-btn" 
+                                    onclick="moveCategory({{ category.id }}, 'down')"
+                                    {% if loop.last %}disabled{% endif %}>
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-0">
+                    {% if category.questions %}
+                    <div class="clean-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="width: 4%">#</th>
+                                    <th scope="col" style="width: 50%">Question</th>
+                                    <th scope="col" style="width: 15%">Type</th>
+                                    <th scope="col" style="width: 10%">Required</th>
+                                    <th scope="col" style="width: 10%">Status</th>
+                                    <th scope="col" style="width: 11%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for question in category.questions.filter_by(is_active=True).order_by('order') %}
+                                <tr class="align-middle">
+                                    <td><span class="fw-medium">{{ loop.index }}</span></td>
+                                    <td>
+                                        <div class="fw-semibold mb-1">{{ question.text }}</div>
+                                        {% if question.question_type == 'rating' %}
+                                            <small class="text-muted">Scale: {{ question.min_rating }}-{{ question.max_rating }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if question.question_type == 'rating' %}
+                                            <span class="badge-rating clean-badge">Rating</span>
+                                        {% elif question.question_type == 'text' %}
+                                            <span class="badge-text clean-badge">Text</span>
+                                        {% elif question.question_type == 'textarea' %}
+                                            <span class="badge-essay clean-badge">Essay</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if question.is_required %}
+                                            <span class="badge-required clean-badge">Required</span>
+                                        {% else %}
+                                            <span class="badge-optional clean-badge">Optional</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if question.is_active %}
+                                            <span class="badge-active clean-badge">Active</span>
+                                        {% else %}
+                                            <span class="badge-inactive clean-badge">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{{ url_for('edit_question', question_id=question.id) }}" 
+                                               class="btn-clean-light clean-btn p-2" 
+                                               title="Edit Question">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn-clean-light clean-btn p-2" 
+                                                    onclick="moveQuestion({{ question.id }}, 'up')"
+                                                    {% if loop.first %}disabled{% endif %}
+                                                    title="Move Up">
+                                                <i class="fas fa-arrow-up"></i>
+                                            </button>
+                                            <button type="button" class="btn-clean-light clean-btn p-2" 
+                                                    onclick="moveQuestion({{ question.id }}, 'down')"
+                                                    {% if loop.last %}disabled{% endif %}
+                                                    title="Move Down">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                            <button type="button" class="btn-clean-danger clean-btn p-2" 
+                                                    onclick="deleteQuestion({{ question.id }})"
+                                                    title="Delete Question">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-question-circle"></i>
+                        <h3>No questions in this category yet</h3>
+                        <p>Create your first question to get started with assessments.</p>
+                        <a href="{{ url_for('create_question', category_id=category.id) }}" 
+                           class="btn-clean-primary clean-btn">
+                            <i class="fas fa-plus"></i>Add First Question
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not categories %}
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>No Assessment Categories</h3>
+                    <p>Get started by creating your first assessment category to organize evaluation questions.</p>
+                    <a href="{{ url_for('create_category') }}" class="btn-clean-primary clean-btn">
+                        <i class="fas fa-plus"></i>Create First Category
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function moveCategory(categoryId, direction) {
+    fetch(`/admin/move_category/${categoryId}/${direction}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error moving category: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error moving category');
+    });
+}
+
+function moveQuestion(questionId, direction) {
+    fetch(`/admin/move_question/${questionId}/${direction}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error moving question: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error moving question');
+    });
+}
+
+function deleteQuestion(questionId) {
+    if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+        fetch(`/admin/delete_question/${questionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting question: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting question');
+        });
+    }
+}
+</script>
+{% endblock %}

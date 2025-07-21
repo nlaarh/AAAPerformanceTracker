@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Final Approval - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Final Approval
+                            </h4>
+                            <p class="text-muted mb-0">{{ project.officer.name }} - {{ project.period.name }}</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('admin_assessment_projects') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Projects
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Officer Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Officer Information</h5>
+                            <p><strong>Name:</strong> {{ project.officer.name }}</p>
+                            <p><strong>Email:</strong> {{ project.officer.email }}</p>
+                            <p><strong>Role:</strong> {{ project.officer.role.title() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Project Status</h5>
+                            <p><strong>Period:</strong> {{ project.period.name }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-warning">Awaiting Final Approval</span>
+                            </p>
+                            <p><strong>Reviewer Progress:</strong> {{ completed_count }} of {{ total_count }} completed</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Reviewer Progress -->
+                    <div class="mb-4">
+                        <h5>Reviewer Progress</h5>
+                        <div class="progress mb-3">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ (completed_count / total_count * 100) if total_count > 0 else 0 }}%">
+                                {{ completed_count }} of {{ total_count }} completed
+                            </div>
+                        </div>
+                        
+                        {% if reviewer_assignments %}
+                            <div class="row">
+                                {% for assignment in reviewer_assignments %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="card-title">{{ assignment.reviewer.name }}</h6>
+                                                <p class="text-muted mb-2">{{ assignment.reviewer.email }}</p>
+                                                
+                                                {% if assignment.is_completed %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Completed
+                                                    </span>
+                                                    <br><small class="text-muted">
+                                                        {{ assignment.completed_at.strftime('%Y-%m-%d %H:%M') if assignment.completed_at else 'N/A' }}
+                                                    </small>
+                                                {% else %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>Pending
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Assessment Summary -->
+                    <div class="mb-4">
+                        <h5>Assessment Summary</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Self-Assessment</h6>
+                                        <p><strong>Status:</strong> <span class="badge bg-success">Completed</span></p>
+                                        <p><strong>Submitted:</strong> {{ project.self_assessment_submitted_at.strftime('%Y-%m-%d %H:%M') if project.self_assessment_submitted_at else 'N/A' }}</p>
+                                        <p><strong>Admin Review:</strong> {{ project.admin_review_completed_at.strftime('%Y-%m-%d %H:%M') if project.admin_review_completed_at else 'N/A' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h6 class="card-title">External Reviews</h6>
+                                        <p><strong>Total Reviewers:</strong> {{ total_count }}</p>
+                                        <p><strong>Completed:</strong> {{ completed_count }}</p>
+                                        <p><strong>Completion Rate:</strong> {{ (completed_count / total_count * 100) | round(1) if total_count > 0 else 0 }}%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Notes -->
+                    {% if project.admin_notes %}
+                        <div class="mb-4">
+                            <h5>Previous Admin Notes</h5>
+                            <div class="bg-light p-3 rounded">
+                                {{ project.admin_notes }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Final Approval Form -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Final Approval Decision</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <!-- Admin Notes -->
+                                <div class="mb-3">
+                                    {{ form.admin_notes.label(class="form-label") }}
+                                    {{ form.admin_notes(class="form-control", rows="4", placeholder="Add your final approval comments here...") }}
+                                    {% if form.admin_notes.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.admin_notes.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <button type="submit" name="action" value="approve" class="btn btn-success w-100">
+                                            <i class="fas fa-check me-2"></i>Approve & Release Results
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button type="submit" name="action" value="hold" class="btn btn-warning w-100">
+                                            <i class="fas fa-pause me-2"></i>Hold for Further Review
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

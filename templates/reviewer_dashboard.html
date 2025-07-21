@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Reviewer Dashboard - AAAPerformanceTracker{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1>
+                            <i class="fas fa-tachometer-alt me-3 text-accent"></i>Reviewer Dashboard
+                        </h1>
+                        <p>Welcome back, {{ current_user.name }}! Here are your review assignments and progress.</p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge-{% if completion_rate >= 80 %}active{% elif completion_rate >= 50 %}essay{% else %}inactive{% endif %} clean-badge fs-6">
+                            {{ completion_rate }}% Complete
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-clock fa-2x text-warning mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ total_pending }}</h3>
+                    <p class="text-muted mb-0">Assigned Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ total_completed }}</h3>
+                    <p class="text-muted mb-0">Completed Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-chart-line fa-2x text-info mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ completion_rate }}%</h3>
+                    <p class="text-muted mb-0">Completion Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-calendar-alt fa-2x text-primary mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ pending_by_period|length + completed_by_period|length }}</h3>
+                    <p class="text-muted mb-0">Active Periods</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overview -->
+    {% if total_pending > 0 or total_completed > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="p-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-chart-bar me-2"></i>Overall Progress
+                    </h5>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-{% if completion_rate >= 80 %}success{% elif completion_rate >= 50 %}warning{% else %}danger{% endif %}" 
+                             style="width: {{ completion_rate }}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">{{ total_completed }} of {{ total_pending + total_completed }} reviews completed</small>
+                        <small class="fw-bold">{{ completion_rate }}%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pending Reviews -->
+    {% if pending_assignments %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-tasks me-2 text-warning"></i>Assigned Reviews ({{ total_pending }})
+                    </h4>
+                    <p>These reviews are waiting for your assessment - click to start or continue</p>
+                </div>
+                <div class="p-0">
+                    {% for period_name, assignments in pending_by_period.items() %}
+                    <div class="period-section">
+                        <div class="period-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>{{ period_name }}
+                                <span class="badge-essay clean-badge ms-2">{{ assignments|length }} assigned</span>
+                            </h6>
+                        </div>
+                        <div class="assignments-grid">
+                            {% for assignment in assignments %}
+                            <div class="assignment-card pending">
+                                <div class="assignment-header">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user text-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ assignment.officer.name }}</div>
+                                            <small class="text-muted">{{ assignment.officer.email }}</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge-essay clean-badge">Pending</span>
+                                </div>
+                                <div class="assignment-details">
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-plus me-1"></i>
+                                            Assigned: 
+                                            {% if assignment.created_at %}
+                                                {{ assignment.created_at.strftime('%m/%d/%Y') }}
+                                            {% else %}
+                                                Recently
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Period ends: {{ assignment.period.end_date.strftime('%B %d, %Y') }}
+                                        </small>
+                                    </div>
+                                    <div class="d-grid">
+                                        <a href="{{ url_for('evaluate_officer', officer_id=assignment.officer_id) }}" 
+                                           class="btn-clean-primary clean-btn">
+                                            <i class="fas fa-edit me-1"></i>Start Review
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Completed Reviews -->
+    {% if completed_assignments %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-check-circle me-2 text-success"></i>Completed Reviews ({{ total_completed }})
+                    </h4>
+                    <p>Reviews you have successfully completed this year</p>
+                </div>
+                <div class="p-0">
+                    {% for period_name, assignments in completed_by_period.items() %}
+                    <div class="period-section">
+                        <div class="period-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-calendar-check me-2"></i>{{ period_name }}
+                                <span class="badge-active clean-badge ms-2">{{ assignments|length }} completed</span>
+                            </h6>
+                        </div>
+                        <div class="assignments-grid">
+                            {% for assignment in assignments %}
+                            <div class="assignment-card completed">
+                                <div class="assignment-header">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user text-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ assignment.officer.name }}</div>
+                                            <small class="text-muted">{{ assignment.officer.email }}</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge-active clean-badge">
+                                        <i class="fas fa-check me-1"></i>Completed
+                                    </span>
+                                </div>
+                                <div class="assignment-details">
+                                    <div class="mb-2">
+                                        <small class="text-success">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Completed: 
+                                            {% if assignment.completed_at %}
+                                                {{ assignment.completed_at.strftime('%m/%d/%Y') }}
+                                            {% else %}
+                                                Recently
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% if assignment.assessment %}
+                                    <div class="d-grid">
+                                        <a href="{{ url_for('view_assessment_new', assignment_id=assignment.id) }}" class="btn-clean-light clean-btn">
+                                            <i class="fas fa-eye me-1"></i>View Assessment
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not pending_assignments and not completed_assignments %}
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>No Review Assignments</h3>
+                    <p>You don't have any review assignments at the moment. Check back later or contact your administrator.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Help Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-question-circle me-2"></i>How It Works
+                    </h4>
+                    <p>Quick guide to completing your 360° reviews</p>
+                </div>
+                <div class="p-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="help-step">
+                                <div class="step-number">1</div>
+                                <h6>Review Assignment</h6>
+                                <p>Click "Start Review" for any pending officer assessment to begin the evaluation process.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="help-step">
+                                <div class="step-number">2</div>
+                                <h6>Complete Assessment</h6>
+                                <p>Rate the officer across multiple categories and provide detailed written feedback.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="help-step">
+                                <div class="step-number">3</div>
+                                <h6>Submit & Track</h6>
+                                <p>Submit your assessment and track progress toward completing all assigned reviews.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<style>
+.period-section {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.period-section:last-child {
+    border-bottom: none;
+}
+
+.period-header {
+    padding: 16px 24px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.assignments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+
+.assignment-card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 16px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.assignment-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.assignment-card.pending {
+    border-left: 4px solid #ffc107;
+}
+
+.assignment-card.completed {
+    border-left: 4px solid #28a745;
+}
+
+.assignment-header {
+    display: flex;
+    justify-content: between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.assignment-details {
+    padding-top: 12px;
+    border-top: 1px solid #f1f3f5;
+}
+
+.help-step {
+    text-align: center;
+    padding: 20px;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 16px;
+}
+
+.help-step h6 {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.help-step p {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 0;
+}
+</style>
+{% endblock %}

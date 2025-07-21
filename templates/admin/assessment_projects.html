@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Projects - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-project-diagram me-2"></i>
+                                Assessment Projects
+                            </h4>
+                            <p class="text-muted mb-0">Manage staged assessment workflow</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('admin_main') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    {% if periods_with_projects %}
+                        {% for period_id, period_data in periods_with_projects.items() %}
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2">
+                                    {{ period_data.period.name }}
+                                    <span class="badge {% if period_data.period.is_active %}bg-success{% else %}bg-secondary{% endif %} ms-2">
+                                        {% if period_data.period.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </h5>
+                                
+                                <div class="row">
+                                    {% for project_info in period_data.projects %}
+                                        {% set project = project_info.project %}
+                                        {% set officer = project_info.officer %}
+                                        
+                                        <div class="col-md-6 col-lg-4 mb-3">
+                                            <div class="card border-0 shadow-sm">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ officer.name }}</h6>
+                                                    <p class="text-muted mb-2">{{ officer.email }}</p>
+                                                    
+                                                    <!-- Status Badge -->
+                                                    {% if project.status == AssessmentStatus.PENDING_SELF_ASSESSMENT %}
+                                                        <span class="badge bg-warning">Pending Self-Assessment</span>
+                                                    {% elif project.status == AssessmentStatus.SELF_ASSESSMENT_SUBMITTED %}
+                                                        <span class="badge bg-info">Self-Assessment Submitted</span>
+                                                    {% elif project.status == AssessmentStatus.AWAITING_ADMIN_REVIEW %}
+                                                        <span class="badge bg-primary">Awaiting Admin Review</span>
+                                                    {% elif project.status == AssessmentStatus.ADMIN_REVIEW_COMPLETED %}
+                                                        <span class="badge bg-success">Admin Review Completed</span>
+                                                    {% elif project.status == AssessmentStatus.RELEASED_TO_REVIEWERS %}
+                                                        <span class="badge bg-info">Released to Reviewers</span>
+                                                    {% elif project.status == AssessmentStatus.AWAITING_FINAL_ADMIN_APPROVAL %}
+                                                        <span class="badge bg-warning">Awaiting Final Approval</span>
+                                                    {% elif project.status == AssessmentStatus.ASSESSMENT_APPROVED_BY_ADMIN %}
+                                                        <span class="badge bg-success">Approved by Admin</span>
+                                                    {% elif project.status == AssessmentStatus.RESULTS_RELEASED_TO_REVIEWEE %}
+                                                        <span class="badge bg-info">Results Released</span>
+                                                    {% elif project.status == AssessmentStatus.REVIEWEE_ACKNOWLEDGED_RESULTS %}
+                                                        <span class="badge bg-success">Results Acknowledged</span>
+                                                    {% elif project.status == AssessmentStatus.ASSESSMENT_CLOSED %}
+                                                        <span class="badge bg-secondary">Closed</span>
+                                                    {% endif %}
+                                                    
+                                                    <!-- Action Buttons -->
+                                                    <div class="mt-3">
+                                                        <!-- Workflow Action Buttons -->
+                                                        {% if project.status in [AssessmentStatus.SELF_ASSESSMENT_SUBMITTED, AssessmentStatus.AWAITING_ADMIN_REVIEW] %}
+                                                            <a href="{{ url_for('review_self_assessment', project_id=project.id) }}" 
+                                                               class="btn btn-sm btn-primary mb-1">
+                                                                <i class="fas fa-eye me-1"></i>Review Self-Assessment
+                                                            </a>
+                                                        {% elif project.status == AssessmentStatus.AWAITING_FINAL_ADMIN_APPROVAL %}
+                                                            <a href="{{ url_for('final_approval', project_id=project.id) }}" 
+                                                               class="btn btn-sm btn-success mb-1">
+                                                                <i class="fas fa-check me-1"></i>Final Approval
+                                                            </a>
+                                                        {% endif %}
+                                                        
+                                                        <!-- Project Management Controls -->
+                                                        <div class="dropdown d-inline-block">
+                                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                                <i class="fas fa-cog me-1"></i>Manage
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{{ url_for('officer_reviews', officer_id=officer.id, period_id=period_data.period.id) }}">
+                                                                        <i class="fas fa-chart-line me-2"></i>View Performance Matrix
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{{ url_for('manage_assignments', period_id=period_data.period.id) }}">
+                                                                        <i class="fas fa-users me-2"></i>Manage Assignments
+                                                                    </a>
+                                                                </li>
+                                                                <li><hr class="dropdown-divider"></li>
+                                                                <li>
+                                                                    <button class="dropdown-item" 
+                                                                            onclick="duplicateProject({{ project.id }}, '{{ officer.name }}', {{ period_data.period.id }})">
+                                                                        <i class="fas fa-copy me-2"></i>Duplicate Project
+                                                                    </button>
+                                                                </li>
+                                                                <li>
+                                                                    <button class="dropdown-item text-danger" 
+                                                                            onclick="deleteProject({{ project.id }}, '{{ officer.name }}')">
+                                                                        <i class="fas fa-trash me-2"></i>Delete Project
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Timestamps -->
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            Created: {{ project.created_at.strftime('%Y-%m-%d %H:%M') if project.created_at else 'N/A' }}
+                                                        </small>
+                                                        {% if project.self_assessment_submitted_at %}
+                                                            <br><small class="text-muted">
+                                                                Self-Assessment: {{ project.self_assessment_submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                                                            </small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Assessment Projects Found</h5>
+                            <p class="text-muted">Create assessment projects by assigning reviewers to assessment periods.</p>
+                            <a href="{{ url_for('assessment_periods') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Manage Assessment Periods
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Project Management Functions -->
+<script>
+function duplicateProject(projectId, officerName, periodId) {
+    if (confirm(`Are you sure you want to duplicate the assessment project for ${officerName}? This will create a new project with the same assignments.`)) {
+        // Create a form to submit the duplicate request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/duplicate_project/' + projectId;
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function deleteProject(projectId, officerName) {
+    // Show comprehensive deletion preview modal
+    showProjectDeletionPreview(projectId, officerName);
+}
+
+function showProjectDeletionPreview(projectId, officerName) {
+    // Reset modal state
+    document.getElementById('projectLoadingMessage').style.display = 'block';
+    document.getElementById('projectDeletionPreview').style.display = 'none';
+    document.getElementById('projectErrorMessage').style.display = 'none';
+    document.getElementById('projectConfirmationText').value = '';
+    document.getElementById('confirmProjectDeleteBtn').disabled = true;
+    
+    // Update modal title
+    document.getElementById('projectDeletionTitle').textContent = 'Delete Assessment Project for ' + officerName;
+    
+    // Show the modal
+    var modal = new bootstrap.Modal(document.getElementById('projectDeletionModal'));
+    modal.show();
+    
+    // Fetch deletion preview data
+    fetch('/admin/project_deletion_preview/' + projectId, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('projectLoadingMessage').style.display = 'none';
+        
+        if (data.success) {
+            // Update deletion summary
+            document.getElementById('projectDeletionSummary').innerHTML = 
+                '<strong>Officer:</strong> ' + data.officer_name + '<br>' +
+                '<strong>Assessment Period:</strong> ' + data.period_name + '<br>' +
+                '<strong>Project Status:</strong> ' + data.project_status + '<br>' +
+                '<strong>Created:</strong> ' + data.created_date;
+            
+            // Show assignments to be deleted
+            if (data.assignments && data.assignments.length > 0) {
+                var assignmentsList = '';
+                data.assignments.forEach(assignment => {
+                    var statusBadge = assignment.status === 'Completed' ? 
+                        '<span class="badge bg-success">Completed</span>' : 
+                        '<span class="badge bg-warning">Pending</span>';
+                    var selfBadge = assignment.is_self_assessment ? 
+                        '<span class="badge bg-info ms-1">Self Assessment</span>' : '';
+                    
+                    assignmentsList += '<div class="border-bottom pb-2 mb-2">' +
+                        '<div class="d-flex justify-content-between align-items-start">' +
+                        '<div>' +
+                        '<strong>' + assignment.reviewer_name + '</strong> reviewing <strong>' + assignment.reviewee_name + '</strong>' +
+                        '<br><small class="text-muted">Assigned: ' + assignment.assignment_date + '</small>' +
+                        '</div>' +
+                        '<div>' + statusBadge + selfBadge + '</div>' +
+                        '</div>' +
+                        '</div>';
+                });
+                document.getElementById('projectAssignmentsList').innerHTML = assignmentsList;
+                document.getElementById('projectAssignmentsCount').textContent = data.assignments.length;
+                document.getElementById('projectAssignmentsSection').style.display = 'block';
+            } else {
+                document.getElementById('projectAssignmentsSection').style.display = 'none';
+            }
+            
+            // Show assessment responses
+            if (data.responses && data.responses.length > 0) {
+                var responsesList = '';
+                data.responses.forEach(response => {
+                    responsesList += '<div class="border-bottom pb-2 mb-2">' +
+                        '<div><strong>' + response.reviewer_name + '</strong> → <strong>' + response.reviewee_name + '</strong></div>' +
+                        '<div class="text-muted small">Question: ' + response.question_name + '</div>' +
+                        '<div class="text-muted small">Submitted: ' + response.submitted_date + '</div>' +
+                        '</div>';
+                });
+                document.getElementById('projectResponsesList').innerHTML = responsesList;
+                document.getElementById('projectResponsesCount').textContent = data.responses.length;
+                document.getElementById('projectResponsesSection').style.display = 'block';
+            } else {
+                document.getElementById('projectResponsesSection').style.display = 'none';
+            }
+            
+            // Show admin approvals
+            if (data.admin_approvals && data.admin_approvals.length > 0) {
+                var approvalsList = '';
+                data.admin_approvals.forEach(approval => {
+                    approvalsList += '<div class="border-bottom pb-2 mb-2">' +
+                        '<div><strong>' + approval.admin_name + '</strong></div>' +
+                        '<div class="text-muted small">Status: ' + approval.approval_status + '</div>' +
+                        '<div class="text-muted small">Date: ' + approval.approval_date + '</div>' +
+                        '</div>';
+                });
+                document.getElementById('projectApprovalsList').innerHTML = approvalsList;
+                document.getElementById('projectApprovalsCount').textContent = data.admin_approvals.length;
+                document.getElementById('projectApprovalsSection').style.display = 'block';
+            } else {
+                document.getElementById('projectApprovalsSection').style.display = 'none';
+            }
+            
+            // Store project ID for deletion
+            document.getElementById('confirmProjectDeleteBtn').setAttribute('data-project-id', projectId);
+            
+            document.getElementById('projectDeletionPreview').style.display = 'block';
+        } else {
+            document.getElementById('projectErrorMessage').innerHTML = '<strong>Error:</strong> ' + data.error;
+            document.getElementById('projectErrorMessage').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        document.getElementById('projectLoadingMessage').style.display = 'none';
+        document.getElementById('projectErrorMessage').innerHTML = '<strong>Error:</strong> Failed to load project data. ' + error.message;
+        document.getElementById('projectErrorMessage').style.display = 'block';
+    });
+}
+
+// Enable delete button when correct confirmation text is entered
+function checkProjectConfirmationText() {
+    var confirmationText = document.getElementById('projectConfirmationText').value;
+    var deleteBtn = document.getElementById('confirmProjectDeleteBtn');
+    
+    if (confirmationText === 'DELETE PROJECT') {
+        deleteBtn.disabled = false;
+        deleteBtn.classList.remove('btn-outline-danger');
+        deleteBtn.classList.add('btn-danger');
+    } else {
+        deleteBtn.disabled = true;
+        deleteBtn.classList.remove('btn-danger');
+        deleteBtn.classList.add('btn-outline-danger');
+    }
+}
+
+// Execute project deletion
+function executeProjectDeletion() {
+    var projectId = document.getElementById('confirmProjectDeleteBtn').getAttribute('data-project-id');
+    
+    // Create a form to submit the delete request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/delete_project/' + projectId;
+    
+    // Add CSRF token if available
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken.getAttribute('content');
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+<!-- Project Deletion Confirmation Modal -->
+<div class="modal fade" id="projectDeletionModal" tabindex="-1" aria-labelledby="projectDeletionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="projectDeletionModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="projectDeletionTitle">Delete Assessment Project</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading Message -->
+                <div id="projectLoadingMessage" class="text-center py-3">
+                    <div class="spinner-border text-primary me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Analyzing project dependencies...
+                </div>
+                
+                <!-- Error Message -->
+                <div id="projectErrorMessage" class="alert alert-danger" style="display: none;"></div>
+                
+                <!-- Deletion Preview -->
+                <div id="projectDeletionPreview" style="display: none;">
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Warning: Permanent Deletion</h6>
+                        <p class="mb-0">This action will permanently delete the assessment project and ALL related data. This cannot be undone.</p>
+                    </div>
+                    
+                    <!-- Project Summary -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Project Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="projectDeletionSummary"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Assignments to be deleted -->
+                    <div id="projectAssignmentsSection" class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users me-2"></i>
+                                Reviewer Assignments (<span id="projectAssignmentsCount">0</span>)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="projectAssignmentsList"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Assessment Responses to be deleted -->
+                    <div id="projectResponsesSection" class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Assessment Responses (<span id="projectResponsesCount">0</span>)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="projectResponsesList"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Approvals to be deleted -->
+                    <div id="projectApprovalsSection" class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Admin Approvals (<span id="projectApprovalsCount">0</span>)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="projectApprovalsList"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirmation Input -->
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-keyboard me-2"></i>Confirmation Required</h6>
+                        <p>To confirm deletion, type <strong>DELETE PROJECT</strong> in the field below:</p>
+                        <input type="text" 
+                               class="form-control" 
+                               id="projectConfirmationText" 
+                               placeholder="Type DELETE PROJECT to confirm"
+                               oninput="checkProjectConfirmationText()">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" 
+                        class="btn btn-outline-danger" 
+                        id="confirmProjectDeleteBtn" 
+                        onclick="executeProjectDeletion()" 
+                        disabled>
+                    <i class="fas fa-trash me-2"></i>Delete Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

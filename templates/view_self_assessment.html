@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Self-Assessment: {{ officer.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Self-Assessment Review</h2>
+                    <p class="text-muted mb-0">{{ officer.name }} - {{ officer.email }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Self-Assessment Content -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Self-Assessment Form
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if self_assessment %}
+                        <!-- Submission Details -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Reviewer Information</h6>
+                                <p class="mb-1"><strong>{{ self_assessment.reviewer_name }}</strong></p>
+                                <p class="mb-1 text-muted">{{ self_assessment.reviewer_email }}</p>
+                                <span class="badge bg-primary">Self-Assessment</span>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Submission Details</h6>
+                                {% if self_assessment.submitted_at %}
+                                    <p class="mb-1">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ self_assessment.submitted_at.strftime('%B %d, %Y') }}
+                                    </p>
+                                    <p class="mb-1 text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ self_assessment.submitted_at.strftime('%I:%M %p') }}
+                                    </p>
+                                {% else %}
+                                    <p class="mb-1 text-muted">Submission date not available</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Assessment Questions in Correct Order -->
+                        <div class="assessment-content">
+                            {% for question in ordered_questions %}
+                            <div class="question-item mb-4 p-3 border rounded">
+                                <!-- Question Header -->
+                                <div class="question-header mb-3">
+                                    <h6 class="text-primary mb-1">{{ question.question_name }}</h6>
+                                    {% if question.question_text %}
+                                        <p class="text-muted mb-0 small">{{ question.question_text }}</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Response Display -->
+                                <div class="response-content">
+                                    {% if question.question_type == 'rating' %}
+                                        <!-- Rating Response -->
+                                        <div class="rating-display">
+                                            <div class="d-flex align-items-center gap-3 mb-2">
+                                                {% for i in range(1, 6) %}
+                                                    <label class="form-check-label">
+                                                        <input type="radio" class="form-check-input me-1" 
+                                                               {% if question.response_number == i %}checked{% endif %} 
+                                                               disabled>
+                                                        {{ i }}
+                                                    </label>
+                                                {% endfor %}
+                                            </div>
+                                            <span class="badge bg-success">Rating: {{ question.response_number or 'Not Rated' }}/5</span>
+                                        </div>
+
+                                    {% elif question.question_type in ['text', 'textarea'] %}
+                                        <!-- Text Response -->
+                                        <div class="text-display">
+                                            <div class="p-3 bg-light border rounded" style="text-align: left;">
+                                                {{ question.response_text or 'No response provided' }}
+                                            </div>
+                                        </div>
+
+                                    {% elif question.question_type == 'date' %}
+                                        <!-- Date Response -->
+                                        <div class="date-display">
+                                            <div class="p-3 bg-light border rounded" style="text-align: left;">
+                                                {% if question.response_date %}
+                                                    <i class="fas fa-calendar me-2"></i>
+                                                    {{ question.response_date.strftime('%B %d, %Y') }}
+                                                {% else %}
+                                                    No date selected
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                    {% else %}
+                                        <!-- Default Response -->
+                                        <div class="default-display">
+                                            <div class="p-3 bg-light border rounded" style="text-align: left;">
+                                                {{ question.response_text or 'No response provided' }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Self-Assessment Found</h5>
+                            <p class="text-muted">This officer has not completed their self-assessment yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

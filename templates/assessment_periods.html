@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Projects - AAAPerformanceTracker{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1>
+                            <i class="fas fa-calendar-alt me-3 text-accent"></i>Assessment Projects
+                        </h1>
+                        <p>Manage and track performance evaluation projects for your organization</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('create_assessment_period') }}" class="btn-clean-primary clean-btn">
+                            <i class="fas fa-plus"></i>Create New Project
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if periods %}
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-list me-2"></i>All Assessment Projects
+                    </h4>
+                    <p>View and manage all active and completed assessment projects</p>
+                </div>
+                <div class="p-0">
+                    <div class="clean-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Created By</th>
+                                    <th class="no-sort">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for period in periods %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ period.name }}</strong>
+                                        {% if period.description %}
+                                        <br><small class="text-muted">{{ period.description[:100] }}{% if period.description|length > 100 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ period.start_date.strftime('%m/%d/%Y') }} - {{ period.end_date.strftime('%m/%d/%Y') }}
+                                            <br>{{ (period.end_date - period.start_date).days }} days
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if period.is_current %}
+                                            <span class="badge-active clean-badge">Active</span>
+                                        {% else %}
+                                            <span class="badge-inactive clean-badge">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 100px; height: 20px;">
+                                                <div class="progress-bar 
+                                                    {% if period.completion_rate >= 80 %}bg-success
+                                                    {% elif period.completion_rate >= 50 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ period.completion_rate }}%">
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">{{ period.completion_rate }}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ period.creator.name }}<br>
+                                            {% if period.created_at %}
+                                                {{ period.created_at.strftime('%m/%d/%Y') }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <!-- User Management -->
+                                            <a href="{{ url_for('period_reviewees', period_id=period.id) }}" 
+                                               class="btn-clean-primary clean-btn p-2" title="Manage Reviewees (People to be reviewed)">
+                                                <i class="fas fa-user-check"></i>
+                                            </a>
+                                            <a href="{{ url_for('period_reviewers', period_id=period.id) }}" 
+                                               class="btn-clean-info clean-btn p-2" title="Manage Reviewers (People who conduct reviews)">
+                                                <i class="fas fa-user-edit"></i>
+                                            </a>
+                                            
+                                            <!-- Edit Project -->
+                                            <a href="{{ url_for('edit_assessment_period', period_id=period.id) }}" 
+                                               class="btn-clean-warning clean-btn p-2" title="Edit Project">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            <!-- Clone Project -->
+                                            <a href="{{ url_for('clone_assessment_period', period_id=period.id) }}" 
+                                               class="btn-clean-secondary clean-btn p-2" title="Clone Project">
+                                                <i class="fas fa-copy"></i>
+                                            </a>
+                                            
+                                            <!-- Assignment Management -->
+                                            <a href="{{ url_for('manage_assignments', period_id=period.id) }}" 
+                                               class="btn-clean-light clean-btn p-2" title="Manage Assignments">
+                                                <i class="fas fa-users"></i>
+                                            </a>
+                                            <a href="{{ url_for('period_progress', period_id=period.id) }}" 
+                                               class="btn-clean-light clean-btn p-2" title="View Progress">
+                                                <i class="fas fa-chart-line"></i>
+                                            </a>
+                                            {% if period.assignments.filter_by(is_completed=False).count() > 0 %}
+                                            <a href="{{ url_for('send_reminders', period_id=period.id) }}" 
+                                               class="btn-clean-light clean-btn p-2" title="Send Reminders">
+                                                <i class="fas fa-bell"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Delete Project -->
+                                            <button type="button" 
+                                                    class="btn-clean-danger clean-btn p-2" 
+                                                    title="Delete Project"
+                                                    onclick="confirmDeletePeriod({{ period.id }}, '{{ period.name|e }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="empty-state">
+                    <i class="fas fa-calendar-plus"></i>
+                    <h3>No Assessment Projects</h3>
+                    <p>Create your first assessment project to start organizing performance evaluations.</p>
+                    <a href="{{ url_for('create_assessment_period') }}" class="btn-clean-primary clean-btn">
+                        <i class="fas fa-plus"></i>Create First Assessment Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Help Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-info-circle me-2"></i>Assessment Project Management
+                    </h4>
+                    <p>Tips for effective assessment project management</p>
+                </div>
+                <div class="p-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Creating Periods:</h6>
+                            <ul class="small mb-0">
+                                <li>Set clear start and end dates</li>
+                                <li>Choose descriptive names (e.g., "Q4 2025 Annual Review")</li>
+                                <li>Add detailed descriptions for context</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Managing Assessments:</h6>
+                            <ul class="small mb-0">
+                                <li>Assign reviewers to specific users</li>
+                                <li>Generate secure review links with passwords</li>
+                                <li>Monitor progress and track completion</li>
+                                <li>View completion rates in real-time</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deletePeriodModal" tabindex="-1" aria-labelledby="deletePeriodModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deletePeriodModalLabel">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Delete Assessment Project
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <strong>⚠️ WARNING: This action cannot be undone!</strong>
+                        <p class="mb-0">This will permanently delete the assessment project and ALL related data.</p>
+                    </div>
+                    
+                    <div id="periodDetails" class="mb-3">
+                        <h6>Period Information:</h6>
+                        <div id="periodInfo" class="bg-light p-3 rounded"></div>
+                    </div>
+                    
+                    <div id="dependencyInfo" class="mb-3">
+                        <h6>Related Data That Will Be Deleted:</h6>
+                        <div id="dependencyList" class="bg-light p-3 rounded">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Analyzing dependencies...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmationText" class="form-label">
+                            <strong>To confirm deletion, type "DELETE PERIOD" exactly:</strong>
+                        </label>
+                        <input type="text" class="form-control" id="confirmationText" placeholder="Type DELETE PERIOD to confirm">
+                        <div class="form-text text-danger">This confirmation is required for security.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled onclick="executePeriodDeletion()">
+                        <i class="fas fa-trash me-2"></i>DELETE PERIOD AND ALL DATA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let currentPeriodId = null;
+    let currentPeriodName = '';
+
+    function confirmDeletePeriod(periodId, periodName) {
+        currentPeriodId = periodId;
+        currentPeriodName = periodName;
+        
+        // Reset form
+        document.getElementById('confirmationText').value = '';
+        document.getElementById('confirmDeleteBtn').disabled = true;
+        
+        // Show loading state
+        document.getElementById('dependencyList').innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Analyzing dependencies...</p>
+            </div>
+        `;
+        
+        // Load period dependencies
+        fetch('/admin/get_period_dependencies/' + periodId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update period info
+                    document.getElementById('periodInfo').innerHTML = 
+                        '<strong>Name:</strong> ' + data.period.name + '<br>' +
+                        '<strong>Description:</strong> ' + (data.period.description || 'No description') + '<br>' +
+                        '<strong>Duration:</strong> ' + data.period.start_date + ' to ' + data.period.end_date;
+                    
+                    // Update dependency info
+                    const deps = data.dependencies;
+                    let dependencyHtml = '';
+                    
+                    if (deps.has_dependencies) {
+                        dependencyHtml = 
+                            '<div class="row g-3">' +
+                                '<div class="col-md-6">' +
+                                    '<div class="card border-warning">' +
+                                        '<div class="card-body p-2">' +
+                                            '<h6 class="card-title text-warning mb-1">' +
+                                                '<i class="fas fa-tasks me-1"></i>Assignments' +
+                                            '</h6>' +
+                                            '<div class="small">' +
+                                                '<div>Total: <strong>' + deps.assignments_total + '</strong></div>' +
+                                                '<div>Completed: <strong>' + deps.assignments_completed + '</strong></div>' +
+                                                '<div>Pending: <strong>' + deps.assignments_pending + '</strong></div>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="col-md-6">' +
+                                    '<div class="card border-info">' +
+                                        '<div class="card-body p-2">' +
+                                            '<h6 class="card-title text-info mb-1">' +
+                                                '<i class="fas fa-clipboard-check me-1"></i>Assessments & Responses' +
+                                            '</h6>' +
+                                            '<div class="small">' +
+                                                '<div>Assessments: <strong>' + deps.assessments_count + '</strong></div>' +
+                                                '<div>Survey Responses: <strong>' + deps.survey_responses_count + '</strong></div>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="col-md-6">' +
+                                    '<div class="card border-success">' +
+                                        '<div class="card-body p-2">' +
+                                            '<h6 class="card-title text-success mb-1">' +
+                                                '<i class="fas fa-file-alt me-1"></i>Form Assignments' +
+                                            '</h6>' +
+                                            '<div class="small">' +
+                                                '<div>Reviewer Forms: <strong>' + deps.reviewer_forms + '</strong></div>' +
+                                                '<div>Self-Review Forms: <strong>' + deps.self_review_forms + '</strong></div>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="col-md-6">' +
+                                    '<div class="card border-secondary">' +
+                                        '<div class="card-body p-2">' +
+                                            '<h6 class="card-title text-secondary mb-1">' +
+                                                '<i class="fas fa-users me-1"></i>Involved Users' +
+                                            '</h6>' +
+                                            '<div class="small">' +
+                                                '<div>Total Users: <strong>' + deps.involved_users_count + '</strong></div>' +
+                                                (deps.involved_users.length > 0 ? 
+                                                    '<div class="mt-1">' +
+                                                        deps.involved_users.slice(0, 5).map(function(user) { return '<div class="text-muted">' + user + '</div>'; }).join('') +
+                                                        (deps.involved_users.length > 5 ? '<div class="text-muted">... and ' + (deps.involved_users.length - 5) + ' more</div>' : '') +
+                                                    '</div>' 
+                                                : '') +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>';
+                    } else {
+                        dependencyHtml = 
+                            '<div class="alert alert-info mb-0">' +
+                                '<i class="fas fa-info-circle me-2"></i>' +
+                                'No related data found. This period can be safely deleted.' +
+                            '</div>';
+                    }
+                    
+                    document.getElementById('dependencyList').innerHTML = dependencyHtml;
+                } else {
+                    document.getElementById('dependencyList').innerHTML = 
+                        '<div class="alert alert-danger mb-0">' +
+                            '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                            'Error loading dependency information: ' + data.error +
+                        '</div>';
+                }
+            })
+            .catch(function(error) {
+                document.getElementById('dependencyList').innerHTML = 
+                    '<div class="alert alert-danger mb-0">' +
+                        '<i class="fas fa-exclamation-triangle me-2"></i>' +
+                        'Error loading dependency information: ' + error.message +
+                    '</div>';
+            });
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('deletePeriodModal')).show();
+    }
+
+    // Enable/disable delete button based on confirmation text
+    document.getElementById('confirmationText').addEventListener('input', function() {
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        if (this.value.trim() === 'DELETE PERIOD') {
+            confirmBtn.disabled = false;
+        } else {
+            confirmBtn.disabled = true;
+        }
+    });
+
+    function executePeriodDeletion() {
+        if (!currentPeriodId) return;
+        
+        const confirmationText = document.getElementById('confirmationText').value.trim();
+        if (confirmationText !== 'DELETE PERIOD') {
+            alert('Please type "DELETE PERIOD" exactly to confirm.');
+            return;
+        }
+        
+        // Create and submit form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/delete_assessment_period/' + currentPeriodId;
+        
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+        
+        const confirmInput = document.createElement('input');
+        confirmInput.type = 'hidden';
+        confirmInput.name = 'confirmation_text';
+        confirmInput.value = confirmationText;
+        form.appendChild(confirmInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+    </script>
+</div>
+</div>
+{% endblock %}

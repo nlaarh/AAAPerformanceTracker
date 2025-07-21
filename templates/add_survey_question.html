@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Question - AAA Performance Tracker{% endblock %}
+
+{% block extra_head %}
+<!-- Bootstrap Datepicker CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Add Question to "{{ survey_form.title }}"</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="questionForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.question_name.label(class="form-label") }}
+                            {{ form.question_name(class="form-control") }}
+                            {% if form.question_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_name.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">A clear, concise label for this question</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_text.label(class="form-label") }}
+                            {{ form.question_text(class="form-control") }}
+                            {% if form.question_text.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_text.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_type.label(class="form-label") }}
+                            {{ form.question_type(class="form-select", id="question_type", onchange="updateQuestionSettings()") }}
+                            {% if form.question_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_type.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_required(class="form-check-input") }}
+                                {{ form.is_required.label(class="form-check-label") }}
+                            </div>
+                        </div>
+
+                        <!-- Rating Scale Settings -->
+                        <div id="ratingSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Rating Scale Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.rating_min.label(class="form-label") }}
+                                            {{ form.rating_min(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.rating_max.label(class="form-label") }}
+                                            {{ form.rating_max(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ form.rating_labels.label(class="form-label") }}
+                                        {{ form.rating_labels(class="form-control") }}
+                                        <small class="form-text text-muted">Optional: Define labels for each rating value</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options Settings (for checkbox, dropdown, multiple choice) -->
+                        <div id="optionsSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Answer Options</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        {{ form.options.label(class="form-label") }}
+                                        {{ form.options(class="form-control") }}
+                                        <small class="form-text text-muted">Enter each option on a new line</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Settings -->
+                        <div id="textSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Text Input Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.max_length.label(class="form-label") }}
+                                            {{ form.max_length(class="form-control", id="max_length") }}
+                                            <small class="form-text text-muted">500 for short text, 2000 for long text</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.placeholder.label(class="form-label") }}
+                                            {{ form.placeholder(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Question Preview -->
+                        <div class="mb-3">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Question Preview</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="questionPreview">
+                                        <p class="text-muted">Preview will appear here as you fill in the question details.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('edit_survey_form', form_id=survey_form.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Form
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateQuestionSettings() {
+    const questionType = document.getElementById('question_type').value;
+    
+    // Hide all settings
+    document.getElementById('ratingSettings').style.display = 'none';
+    document.getElementById('optionsSettings').style.display = 'none';
+    document.getElementById('textSettings').style.display = 'none';
+    
+    // Show relevant settings
+    if (questionType === 'rating') {
+        document.getElementById('ratingSettings').style.display = 'block';
+    } else if (['checkbox', 'dropdown', 'multiple_choice'].includes(questionType)) {
+        document.getElementById('optionsSettings').style.display = 'block';
+    } else if (['text', 'textarea'].includes(questionType)) {
+        document.getElementById('textSettings').style.display = 'block';
+        
+        // Set appropriate default max length
+        const maxLengthField = document.getElementById('max_length');
+        if (maxLengthField && !maxLengthField.value) {
+            maxLengthField.value = questionType === 'textarea' ? 2000 : 500;
+        }
+    }
+    
+    updatePreview();
+}
+
+function updatePreview() {
+    const questionText = document.getElementById('question_text').value;
+    const questionType = document.getElementById('question_type').value;
+    const isRequired = document.getElementById('is_required').checked;
+    const previewContainer = document.getElementById('questionPreview');
+    
+    if (!questionText.trim()) {
+        previewContainer.innerHTML = '<p class="text-muted">Preview will appear here as you fill in the question details.</p>';
+        return;
+    }
+    
+    let previewHTML = `<div class="mb-3">
+        <label class="form-label">${questionText}${isRequired ? ' <span class="text-danger">*</span>' : ''}</label>`;
+    
+    switch (questionType) {
+        case 'rating':
+            const minRating = document.getElementById('rating_min').value || 1;
+            const maxRating = document.getElementById('rating_max').value || 5;
+            previewHTML += '<div class="d-flex gap-3">';
+            for (let i = minRating; i <= maxRating; i++) {
+                previewHTML += `<div class="form-check">
+                    <input class="form-check-input" type="radio" name="preview_rating" value="${i}" disabled>
+                    <label class="form-check-label">${i}</label>
+                </div>`;
+            }
+            previewHTML += '</div>';
+            break;
+        case 'text':
+            const placeholder = document.getElementById('placeholder').value || '';
+            previewHTML += `<input type="text" class="form-control" placeholder="${placeholder}" disabled>`;
+            break;
+        case 'textarea':
+            const textareaPlaceholder = document.getElementById('placeholder').value || '';
+            previewHTML += `<textarea class="form-control" rows="3" placeholder="${textareaPlaceholder}" disabled></textarea>`;
+            break;
+        case 'checkbox':
+            const checkboxOptions = document.getElementById('options').value.split('\n').filter(opt => opt.trim());
+            checkboxOptions.forEach(option => {
+                previewHTML += `<div class="form-check">
+                    <input class="form-check-input" type="checkbox" disabled>
+                    <label class="form-check-label">${option.trim()}</label>
+                </div>`;
+            });
+            break;
+        case 'dropdown':
+            const dropdownOptions = document.getElementById('options').value.split('\n').filter(opt => opt.trim());
+            previewHTML += '<select class="form-select" disabled><option>Select an option...</option>';
+            dropdownOptions.forEach(option => {
+                previewHTML += `<option>${option.trim()}</option>`;
+            });
+            previewHTML += '</select>';
+            break;
+        case 'multiple_choice':
+            const radioOptions = document.getElementById('options').value.split('\n').filter(opt => opt.trim());
+            radioOptions.forEach(option => {
+                previewHTML += `<div class="form-check">
+                    <input class="form-check-input" type="radio" name="preview_multiple" disabled>
+                    <label class="form-check-label">${option.trim()}</label>
+                </div>`;
+            });
+            break;
+        case 'boolean':
+            previewHTML += `<div class="form-check">
+                <input class="form-check-input" type="radio" name="preview_boolean" value="true" disabled>
+                <label class="form-check-label">Yes</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="preview_boolean" value="false" disabled>
+                <label class="form-check-label">No</label>
+            </div>`;
+            break;
+        case 'date':
+            previewHTML += '<input type="date" class="form-control" disabled>';
+            break;
+    }
+    
+    previewHTML += '</div>';
+    previewContainer.innerHTML = previewHTML;
+}
+
+// Initialize settings and preview on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateQuestionSettings();
+    
+    // Add event listeners for live preview updates
+    document.getElementById('question_text').addEventListener('input', updatePreview);
+    document.getElementById('is_required').addEventListener('change', updatePreview);
+    document.getElementById('rating_min').addEventListener('input', updatePreview);
+    document.getElementById('rating_max').addEventListener('input', updatePreview);
+    document.getElementById('options').addEventListener('input', updatePreview);
+    document.getElementById('placeholder').addEventListener('input', updatePreview);
+});
+</script>
+
+<!-- Bootstrap Datepicker JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+{% endblock %}

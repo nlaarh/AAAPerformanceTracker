@@ -1,0 +1,292 @@
+/* Professional AAA Performance Tracker Styles */
+
+/* Brand Header Styles */
+.brand-header {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+}
+
+.logo-container {
+    transition: transform 0.3s ease;
+}
+
+.logo-container:hover {
+    transform: scale(1.1);
+}
+
+.brand-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.brand-subtitle {
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+/* Navigation Enhancements */
+.navbar {
+    border-top: 3px solid #2563eb;
+}
+
+.nav-link {
+    font-weight: 500;
+    color: #374151 !important;
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    margin: 0 2px;
+}
+
+.nav-link:hover {
+    background-color: #f3f4f6;
+    color: #2563eb !important;
+    transform: translateY(-1px);
+}
+
+.nav-link.active {
+    background-color: #eff6ff;
+    color: #2563eb !important;
+    border: 1px solid #dbeafe;
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 8px;
+}
+
+.dropdown-item {
+    border-radius: 6px;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f3f4f6;
+    transform: translateX(4px);
+}
+
+/* Card Enhancements */
+.card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Button Enhancements */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 8px 20px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    border: none;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #059669, #10b981);
+    border: none;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    border: none;
+}
+
+/* Badge Enhancements */
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Table Enhancements */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: none;
+    font-weight: 600;
+    color: #374151;
+    padding: 16px;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc;
+    transform: scale(1.01);
+}
+
+/* Alert Enhancements */
+.alert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Form Enhancements */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+    padding: 10px 14px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.1);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+/* Progress Bar Enhancements */
+.progress {
+    border-radius: 10px;
+    height: 8px;
+    background-color: #f3f4f6;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    border-bottom: 1px solid #f3f4f6;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #f3f4f6;
+    border-radius: 0 0 15px 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .brand-title {
+        font-size: 1.25rem;
+    }
+    
+    .brand-subtitle {
+        font-size: 0.75rem;
+    }
+    
+    .user-info {
+        display: none;
+    }
+}
+
+/* Loading Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card, .table, .alert {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Typography */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #374151;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Icon Enhancements */
+.fas, .far {
+    transition: all 0.3s ease;
+}
+
+.card:hover .fas,
+.card:hover .far {
+    transform: scale(1.1);
+}
+
+/* Status Indicators */
+.status-online {
+    color: #10b981;
+}
+
+.status-offline {
+    color: #ef4444;
+}
+
+.status-pending {
+    color: #f59e0b;
+}
+
+/* Professional spacing */
+.section-spacing {
+    margin-bottom: 3rem;
+}
+
+.card-spacing {
+    margin-bottom: 1.5rem;
+}

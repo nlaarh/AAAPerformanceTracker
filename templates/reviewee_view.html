@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}My Performance Review - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-user-circle text-primary me-2"></i>My Performance Review
+        </h1>
+        <span class="badge bg-info fs-6">{{ current_user.name }}</span>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_count or 0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Completed</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_count or 0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Completion Rate</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completion_rate or 0 }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Table -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">All Assignments</h6>
+        </div>
+        <div class="card-body">
+            {% if assignments %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="assignmentsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Assigned To</th>
+                            <th>Assessment Project</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                            <th>Completed Date</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in assignments %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar bg-primary text-white me-2">
+                                        {% if assignment.officer_id == assignment.reviewer_id %}
+                                            <i class="fas fa-user"></i>
+                                        {% else %}
+                                            {{ assignment.reviewer.name[:2].upper() }}
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if assignment.officer_id == assignment.reviewer_id %}
+                                            <div class="badge bg-success">Self Assessment</div>
+                                            <small class="text-muted d-block">Reviewing: {{ assignment.officer.name }}</small>
+                                        {% else %}
+                                            <div class="fw-bold">{{ assignment.reviewer.name }}</div>
+                                            <small class="text-muted">Reviewing: {{ assignment.officer.name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ assignment.period.name }}</div>
+                                <small class="text-muted">{{ assignment.period.start_date.strftime('%m/%d/%Y') }} - {{ assignment.period.end_date.strftime('%m/%d/%Y') }}</small>
+                            </td>
+                            <td>
+                                {% if assignment.is_completed %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif assignment.is_submitted %}
+                                    <span class="badge bg-info">Submitted</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.created_at %}
+                                    {{ assignment.created_at.strftime('%m/%d/%Y') }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if assignment.completed_at %}
+                                    {{ assignment.completed_at.strftime('%m/%d/%Y') }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if assignment.officer_id == assignment.reviewer_id %}
+                                    <!-- Self Assessment Actions -->
+                                    {% if assignment.is_completed %}
+                                        <a href="{{ url_for('view_assessment_new', assignment_id=assignment.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Assessment">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% elif assignment.is_submitted %}
+                                        <a href="{{ url_for('view_assessment_new', assignment_id=assignment.id) }}" 
+                                           class="btn btn-sm btn-outline-secondary" title="View Submitted Assessment">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('view_assessment_new', assignment_id=assignment.id) }}" 
+                                           class="btn btn-sm btn-primary" title="Start/Continue Self Assessment">
+                                            <i class="fas fa-play me-1"></i>Start
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- External Review - View Only -->
+                                    {% if assignment.is_completed %}
+                                        <span class="badge bg-success">Complete</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pending</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h6>No Assignments</h6>
+                <p class="text-muted">You don't have any assessment assignments at the moment.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.text-warning {
+    color: #f6c23e !important;
+}
+
+.text-success {
+    color: #1cc88a !important;
+}
+
+.text-info {
+    color: #36b9cc !important;
+}
+</style>
+{% endblock %}

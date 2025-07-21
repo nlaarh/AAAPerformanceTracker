@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{% if category %}Edit Category{% else %}Create Category{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        {% if category %}
+                            <i class="fas fa-edit me-2"></i>Edit Assessment Category
+                        {% else %}
+                            <i class="fas fa-folder-plus me-2"></i>Create New Assessment Category
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label fw-bold") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.name.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-bold") }}
+                            {{ form.description(class="form-control") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.description.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                {{ form.is_active.label(class="form-check-label") }}
+                            </div>
+                            <div class="form-text">Active categories will be included in assessments</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-lightbulb me-2"></i>Next Steps
+                            </h6>
+                            <p class="mb-0">After creating this category, you can:</p>
+                            <ul class="mb-0 mt-2">
+                                <li>Add questions to this category</li>
+                                <li>Reorder questions using drag and drop</li>
+                                <li>Configure question types (rating, text, etc.)</li>
+                                <li>Set questions as required or optional</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('admin_questions') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Approval History{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0 py-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="h4 mb-1 fw-bold text-dark">Approval History</h2>
+                            <p class="text-muted mb-0">Complete history of reviewer assessment approvals with advanced filtering</p>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">Total Records: {{ total_count }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Filters Section -->
+                    <div class="bg-light rounded p-3 mb-4">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-3">
+                                <label for="reviewee_filter" class="form-label fw-semibold">Reviewee</label>
+                                <select name="reviewee_id" id="reviewee_filter" class="form-select">
+                                    <option value="">All Reviewees</option>
+                                    {% for officer in officers %}
+                                    <option value="{{ officer.id }}" {% if officer.id == selected_filters.reviewee_id %}selected{% endif %}>
+                                        {{ officer.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="reviewer_filter" class="form-label fw-semibold">Reviewer</label>
+                                <select name="reviewer_id" id="reviewer_filter" class="form-select">
+                                    <option value="">All Reviewers</option>
+                                    {% for reviewer in reviewers %}
+                                    <option value="{{ reviewer.id }}" {% if reviewer.id == selected_filters.reviewer_id %}selected{% endif %}>
+                                        {{ reviewer.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="status_filter" class="form-label fw-semibold">Status</label>
+                                <select name="status" id="status_filter" class="form-select">
+                                    <option value="">All Statuses</option>
+                                    <option value="pending" {% if selected_filters.status == 'pending' %}selected{% endif %}>Pending Approval</option>
+                                    <option value="approved" {% if selected_filters.status == 'approved' %}selected{% endif %}>Approved</option>
+                                    <option value="rejected" {% if selected_filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="period_filter" class="form-label fw-semibold">Period</label>
+                                <select name="period_id" id="period_filter" class="form-select">
+                                    <option value="">All Periods</option>
+                                    {% for period in periods %}
+                                    <option value="{{ period.id }}" {% if period.id == selected_filters.period_id %}selected{% endif %}>
+                                        {{ period.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <a href="{{ url_for('approval_history') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white border-0 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="fs-5 fw-bold">{{ stats.pending }}</div>
+                                            <div class="small opacity-75">Pending Approval</div>
+                                        </div>
+                                        <div class="fs-2 opacity-50">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white border-0 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="fs-5 fw-bold">{{ stats.approved }}</div>
+                                            <div class="small opacity-75">Approved</div>
+                                        </div>
+                                        <div class="fs-2 opacity-50">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white border-0 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="fs-5 fw-bold">{{ stats.rejected }}</div>
+                                            <div class="small opacity-75">Rejected</div>
+                                        </div>
+                                        <div class="fs-2 opacity-50">
+                                            <i class="fas fa-times-circle"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white border-0 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <div class="fs-5 fw-bold">{{ stats.total }}</div>
+                                            <div class="small opacity-75">Total Records</div>
+                                        </div>
+                                        <div class="fs-2 opacity-50">
+                                            <i class="fas fa-list"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover border">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-end">Reviewee</th>
+                                    <th class="border-end">Reviewer</th>
+                                    <th class="border-end">Period</th>
+                                    <th class="border-end">Submitted</th>
+                                    <th class="border-end">Status</th>
+                                    <th class="border-end">Action Date</th>
+                                    <th class="border-end">Admin</th>
+                                    <th class="border-end">Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in approval_records %}
+                                <tr>
+                                    <td class="border-end">
+                                        <div class="fw-semibold">{{ record.officer.name }}</div>
+                                        <small class="text-muted">{{ record.officer.email }}</small>
+                                    </td>
+                                    <td class="border-end">
+                                        <div class="fw-semibold">{{ record.reviewer.name }}</div>
+                                        <small class="text-muted">{{ record.reviewer.email }}</small>
+                                    </td>
+                                    <td class="border-end">
+                                        <span class="badge bg-light text-dark">{{ record.period.name }}</span>
+                                    </td>
+                                    <td class="border-end">
+                                        <div class="small">{{ record.submitted_at.strftime('%Y-%m-%d') if record.submitted_at else '-' }}</div>
+                                        <div class="small text-muted">{{ record.submitted_at.strftime('%I:%M %p') if record.submitted_at else '-' }}</div>
+                                    </td>
+                                    <td class="border-end">
+                                        {% if not record.is_submitted %}
+                                        <span class="badge bg-secondary">Not Submitted</span>
+                                        {% elif record.is_submitted and not record.is_admin_approved %}
+                                        <span class="badge bg-warning text-dark">Pending Approval</span>
+                                        {% elif record.is_admin_approved %}
+                                        <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="border-end">
+                                        {% if record.admin_approved_at %}
+                                        <div class="small">{{ record.admin_approved_at.strftime('%Y-%m-%d') }}</div>
+                                        <div class="small text-muted">{{ record.admin_approved_at.strftime('%I:%M %p') }}</div>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="border-end">
+                                        {% if record.admin_approved_by %}
+                                        {{ record.admin_user.name }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="border-end">
+                                        {% if record.admin_notes %}
+                                        <div class="small" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="{{ record.admin_notes }}">
+                                            {{ record.admin_notes }}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.is_submitted and not record.is_admin_approved %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-success btn-sm" onclick="approveAssessment({{ record.id }})">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="rejectAssessment({{ record.id }})">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        <a href="{{ url_for('view_assessment', assignment_id=record.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="fas fa-search me-2"></i>No approval records found with current filters.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if approval_records|length > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            Showing {{ ((page - 1) * per_page) + 1 }} to {{ min(page * per_page, total_count) }} of {{ total_count }} records
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('approval_history', page=page-1, **request.args) }}">Previous</a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for p in range(max(1, page-2), min(total_pages+1, page+3)) %}
+                                <li class="page-item {% if p == page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('approval_history', page=p, **request.args) }}">{{ p }}</a>
+                                </li>
+                                {% endfor %}
+                                
+                                {% if page < total_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('approval_history', page=page+1, **request.args) }}">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approval Modal -->
+<div class="modal fade" id="approvalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Approval Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="approvalForm">
+                    <input type="hidden" id="assignmentId" name="assignment_id">
+                    <input type="hidden" id="approvalAction" name="action">
+                    
+                    <div class="mb-3">
+                        <label for="adminNotes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="adminNotes" name="admin_notes" rows="3" 
+                                  placeholder="Add any notes about this approval decision..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitApproval()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function approveAssessment(assignmentId) {
+    document.getElementById('assignmentId').value = assignmentId;
+    document.getElementById('approvalAction').value = 'approve';
+    document.querySelector('#approvalModal .modal-title').textContent = 'Approve Assessment';
+    document.querySelector('#approvalModal .btn-primary').textContent = 'Approve';
+    document.querySelector('#approvalModal .btn-primary').className = 'btn btn-success';
+    new bootstrap.Modal(document.getElementById('approvalModal')).show();
+}
+
+function rejectAssessment(assignmentId) {
+    document.getElementById('assignmentId').value = assignmentId;
+    document.getElementById('approvalAction').value = 'reject';
+    document.querySelector('#approvalModal .modal-title').textContent = 'Reject Assessment';
+    document.querySelector('#approvalModal .btn-primary').textContent = 'Reject';
+    document.querySelector('#approvalModal .btn-primary').className = 'btn btn-danger';
+    new bootstrap.Modal(document.getElementById('approvalModal')).show();
+}
+
+function submitApproval() {
+    const form = document.getElementById('approvalForm');
+    const formData = new FormData(form);
+    const action = formData.get('action');
+    const assignmentId = formData.get('assignment_id');
+    
+    const url = action === 'approve' ? 
+        `{{ url_for('approve_reviewer_assessment', assignment_id=0) }}`.replace('0', assignmentId) :
+        `{{ url_for('reject_reviewer_assessment', assignment_id=0) }}`.replace('0', assignmentId);
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+{% endblock %}

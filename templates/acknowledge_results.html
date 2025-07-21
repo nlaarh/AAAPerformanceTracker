@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Acknowledge Assessment Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-clipboard-check me-2"></i>
+                                Assessment Results
+                            </h4>
+                            <p class="text-muted mb-0">{{ project.period.name }}</p>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('my_assignments') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to My Assignments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Assessment Information -->
+                    <div class="alert alert-info border-0 mb-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle fa-lg me-3"></i>
+                            </div>
+                            <div>
+                                <h6 class="alert-heading">Your Assessment Results Are Ready</h6>
+                                <p class="mb-0">Your assessment has been completed and reviewed by the administration. Please review the results and provide your acknowledgment below.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Project Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Assessment Details</h5>
+                            <p><strong>Assessment Period:</strong> {{ project.period.name }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-success">Results Released</span>
+                            </p>
+                            <p><strong>Released:</strong> {{ project.final_approval_at.strftime('%Y-%m-%d %H:%M') if project.final_approval_at else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Timeline</h5>
+                            <p><strong>Self-Assessment:</strong> {{ project.self_assessment_submitted_at.strftime('%Y-%m-%d') if project.self_assessment_submitted_at else 'N/A' }}</p>
+                            <p><strong>Admin Review:</strong> {{ project.admin_review_completed_at.strftime('%Y-%m-%d') if project.admin_review_completed_at else 'N/A' }}</p>
+                            <p><strong>Final Approval:</strong> {{ project.final_approval_at.strftime('%Y-%m-%d') if project.final_approval_at else 'N/A' }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Results Access -->
+                    <div class="mb-4">
+                        <h5>Access Your Results</h5>
+                        <p>You can view your complete assessment results including feedback from all reviewers.</p>
+                        <a href="{{ url_for('officer_reviews', officer_id=project.officer_id) }}" class="btn btn-primary">
+                            <i class="fas fa-chart-line me-2"></i>View Complete Assessment Results
+                        </a>
+                    </div>
+                    
+                    <!-- Admin Notes -->
+                    {% if project.admin_notes %}
+                        <div class="mb-4">
+                            <h5>Administrator Notes</h5>
+                            <div class="bg-light p-3 rounded">
+                                {{ project.admin_notes | replace('\n', '<br>') | safe }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Acknowledgment Form -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">Acknowledgment Required</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <!-- Acknowledgment Checkbox -->
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.acknowledged(class="form-check-input", id="acknowledged") }}
+                                        <label class="form-check-label" for="acknowledged">
+                                            {{ form.acknowledged.label.text }}
+                                        </label>
+                                    </div>
+                                    {% if form.acknowledged.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.acknowledged.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Optional Feedback -->
+                                <div class="mb-3">
+                                    {{ form.reviewee_feedback.label(class="form-label") }}
+                                    {{ form.reviewee_feedback(class="form-control", rows="4", placeholder="Share any thoughts about the assessment process or results (optional)...") }}
+                                    {% if form.reviewee_feedback.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.reviewee_feedback.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Submit Button -->
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-check me-2"></i>Submit Acknowledgment
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

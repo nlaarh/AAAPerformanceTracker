@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Reviewees - {{ period.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-user-check me-2"></i>
+                        Manage Reviewees - {{ period.name }}
+                    </h4>
+                    <p class="text-muted mb-0">Select people who will be reviewed during this assessment period</p>
+                </div>
+                
+                <form method="POST">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-users me-2"></i>
+                                        Available People to Review
+                                    </label>
+                                    <p class="text-muted small">Select all people who should receive performance reviews during this assessment period.</p>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover" id="revieweesTable">
+                                            <thead>
+                                                <tr>
+                                                    <th width="60">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="selectAllReviewees" onchange="toggleAll('reviewee_ids', this.checked)">
+                                                            <label class="form-check-label" for="selectAllReviewees">
+                                                                <span class="visually-hidden">Select All</span>
+                                                            </label>
+                                                        </div>
+                                                    </th>
+                                                    <th>Name</th>
+                                                    <th>Role</th>
+                                                    <th>Email</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for user in all_reviewees %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input reviewee-checkbox" 
+                                                                   type="checkbox" 
+                                                                   name="reviewee_ids" 
+                                                                   value="{{ user.id }}" 
+                                                                   id="reviewee_{{ user.id }}"
+                                                                   {% if user.id in current_reviewee_ids %}checked{% endif %}
+                                                                   onchange="updateSelectAll('reviewee_ids', 'selectAllReviewees')">
+                                                            <label class="form-check-label" for="reviewee_{{ user.id }}">
+                                                                <span class="visually-hidden">Select {{ user.name }}</span>
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ user.name }}</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-secondary">{{ user.role.replace('_', ' ').title() }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <small class="text-muted">{{ user.email }}</small>
+                                                    </td>
+                                                    <td>
+                                                        {% if user.id in current_reviewee_ids %}
+                                                            <span class="badge bg-success">Selected</span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-dark">Available</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    {% if not all_reviewees %}
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        No active users available to be reviewees. Only active officers and administrators can be selected for review.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-light border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('assessment_periods') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Assessment Projects
+                            </a>
+                            
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary" onclick="selectAll(true)">
+                                    <i class="fas fa-check-square me-2"></i>
+                                    Select All
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="selectAll(false)">
+                                    <i class="fas fa-square me-2"></i>
+                                    Clear All
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    Save Reviewees
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+
+<!-- DataTables JS -->
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#revieweesTable').DataTable({
+        "pageLength": 25,
+        "order": [[ 1, "asc" ]],
+        "columnDefs": [
+            { "orderable": false, "targets": 0 }
+        ],
+        "language": {
+            "search": "Search reviewees:",
+            "lengthMenu": "Show _MENU_ reviewees per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ reviewees"
+        }
+    });
+});
+
+function selectAll(select) {
+    const checkboxes = document.querySelectorAll('input[name="reviewee_ids"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = select;
+    });
+    updateSelectAll('reviewee_ids', 'selectAllReviewees');
+}
+
+function toggleAll(checkboxName, checked) {
+    const checkboxes = document.querySelectorAll(`input[name="${checkboxName}"]`);
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+}
+
+function updateSelectAll(checkboxName, selectAllId) {
+    const checkboxes = document.querySelectorAll(`input[name="${checkboxName}"]`);
+    const selectAllCheckbox = document.getElementById(selectAllId);
+    
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const totalCount = checkboxes.length;
+    
+    if (checkedCount === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === totalCount) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+// Initialize select all state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelectAll('reviewee_ids', 'selectAllReviewees');
+});
+</script>
+{% endblock %}

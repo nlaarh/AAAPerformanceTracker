@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}Assessment Forms - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Assessment Form Builder</h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('create_assessment_form') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create New Form
+                    </a>
+                    <a href="{{ url_for('assign_forms_to_period') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-calendar-alt"></i> Assign to Period
+                    </a>
+                </div>
+            </div>
+
+            {% if forms %}
+                <div class="row">
+                    {% for form in forms %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ form.title }}</h5>
+                                    <p class="card-text text-muted">{{ form.description[:100] }}{% if form.description|length > 100 %}...{% endif %}</p>
+                                    
+                                    <div class="mb-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-question-circle"></i> {{ form.form_questions.count() }} questions
+                                        </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user"></i> Created by {{ form.creator.name }}
+                                        </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ form.created_at.strftime('%Y-%m-%d') }}
+                                        </small>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        {% if form.is_template %}
+                                            <span class="badge bg-info me-1">Template</span>
+                                        {% endif %}
+                                        {% if form.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <a href="{{ url_for('edit_assessment_form', form_id=form.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{{ url_for('edit_assessment_form_title', form_id=form.id) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-font"></i> Title
+                                        </a>
+                                        <a href="{{ url_for('preview_assessment_form', form_id=form.id) }}" class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </a>
+                                        <a href="{{ url_for('duplicate_assessment_form', form_id=form.id) }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-copy"></i> Duplicate
+                                        </a>
+                                        <a href="{{ url_for('export_assessment_form', form_id=form.id) }}" class="btn btn-sm btn-outline-success" title="Export Form">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="showImportModal({{ form.id }}, '{{ form.title }}')" title="Import Form">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                        {% if form.is_active %}
+                                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="toggleFormStatus({{ form.id }}, false, '{{ form.title }}')">
+                                                <i class="fas fa-pause"></i> Deactivate
+                                            </button>
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="toggleFormStatus({{ form.id }}, true, '{{ form.title }}')">
+                                                <i class="fas fa-play"></i> Activate
+                                            </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteForm({{ form.id }}, '{{ form.title }}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Assessment Forms Created Yet</h4>
+                    <p class="text-muted">Create your first survey form to get started with customized evaluations.</p>
+                    <a href="{{ url_for('create_assessment_form') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Your First Form
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Import Form Modal -->
+<div class="modal fade" id="importFormModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Assessment Form</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importFormForm" action="{{ url_for('import_assessment_form') }}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" id="import_form_id" name="form_id" value="">
+                    <div class="mb-3">
+                        <label class="form-label">Form to Update:</label>
+                        <p class="form-text text-muted" id="import_form_title"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label">Excel File</label>
+                        <input type="file" class="form-control" id="importFile" name="file" accept=".xlsx,.xls" required>
+                        <div class="form-text">Select an Excel file exported from this form to import updates.</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Import Format:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Excel file should be exported from the same form</li>
+                            <li>Questions will be updated based on their text content</li>
+                            <li>New questions will be added to the form</li>
+                            <li>Existing questions will be updated with new settings</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="importFormForm" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Import Updates
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteFormModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the assessment form "<strong id="formTitle"></strong>"?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteFormForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Form</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toggle Status Confirmation Modal -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Status Change</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="toggleStatusMessage"></p>
+                <p class="text-muted small" id="toggleStatusWarning"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="toggleStatusForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn" id="toggleStatusButton">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showImportModal(formId, formTitle) {
+    document.getElementById('import_form_id').value = formId;
+    document.getElementById('import_form_title').textContent = formTitle;
+    new bootstrap.Modal(document.getElementById('importFormModal')).show();
+}
+
+function deleteForm(formId, formTitle) {
+    document.getElementById('formTitle').textContent = formTitle;
+    document.getElementById('deleteFormForm').action = `/admin/delete_assessment_form/${formId}`;
+    new bootstrap.Modal(document.getElementById('deleteFormModal')).show();
+}
+
+function toggleFormStatus(formId, newStatus, formTitle) {
+    const action = newStatus ? 'activate' : 'deactivate';
+    const messageEl = document.getElementById('toggleStatusMessage');
+    const warningEl = document.getElementById('toggleStatusWarning');
+    const buttonEl = document.getElementById('toggleStatusButton');
+    
+    messageEl.textContent = `Are you sure you want to ${action} the assessment form "${formTitle}"?`;
+    
+    if (newStatus) {
+        warningEl.textContent = 'This form will become available for selection in new assessment projects.';
+        buttonEl.textContent = 'Activate';
+        buttonEl.className = 'btn btn-success';
+    } else {
+        warningEl.textContent = 'This form will no longer be available for selection in new assessment projects.';
+        buttonEl.textContent = 'Deactivate';
+        buttonEl.className = 'btn btn-warning';
+    }
+    
+    document.getElementById('toggleStatusForm').action = `/admin/toggle_assessment_form_status/${formId}`;
+    new bootstrap.Modal(document.getElementById('toggleStatusModal')).show();
+}
+</script>
+{% endblock %}

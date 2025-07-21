@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Dashboard - {{ period.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-chart-bar me-2"></i>Assessment Dashboard</h2>
+                    <p class="text-muted mb-0">
+                        <strong>{{ period.name }}</strong>
+                        <span class="badge bg-info ms-2">{{ period.start_date.strftime('%b %d, %Y') }} - {{ period.end_date.strftime('%b %d, %Y') }}</span>
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('assessment_activity_logs') }}?period_id={{ period.id }}" class="btn btn-outline-info me-2">
+                        <i class="fas fa-history me-1"></i>Activity Logs
+                    </a>
+                    <a href="{{ url_for('admin_main') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.total_projects }}</h3>
+                            <p class="mb-0">Total Assessments</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.completed_projects }}</h3>
+                            <p class="mb-0">Completed</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-gradient-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.in_progress_projects }}</h3>
+                            <p class="mb-0">In Progress</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-gradient-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.completion_rate }}%</h3>
+                            <p class="mb-0">Completion Rate</p>
+                        </div>
+                        <div class="stats-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-pie-chart me-2"></i>Assessment Status Overview</h5>
+                </div>
+                <div class="card-body">
+                    {{ period_overview|safe }}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Activity Heatmap</h5>
+                </div>
+                <div class="card-body">
+                    {{ activity_heatmap|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Officer Progress Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Individual Assessment Progress</h5>
+                    <span class="badge bg-primary">{{ officer_charts|length }} Officers Shown</span>
+                </div>
+                <div class="card-body">
+                    {% if officer_charts %}
+                    <div class="row">
+                        {% for officer_data in officer_charts %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="officer-card">
+                                <div class="officer-header">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-user me-2"></i>{{ officer_data.officer.name }}
+                                        </h6>
+                                        <div>
+                                            <span class="badge 
+                                                {% if officer_data.project.status.value == 'assessment_closed' %}bg-success
+                                                {% elif 'completed' in officer_data.project.status.value %}bg-primary
+                                                {% elif 'in_progress' in officer_data.project.status.value %}bg-warning
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ officer_data.project.status.value.replace('_', ' ').title() }}
+                                            </span>
+                                            <a href="{{ url_for('assessment_timeline', officer_id=officer_data.officer.id, period_id=period.id) }}" 
+                                               class="btn btn-sm btn-outline-primary ms-2">
+                                                <i class="fas fa-timeline me-1"></i>View Timeline
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="chart-container">
+                                            {{ officer_data.timeline_chart|safe }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="gauge-container">
+                                            {{ officer_data.status_gauge|safe }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if projects|length > 6 %}
+                    <div class="text-center mt-3">
+                        <p class="text-muted">Showing top 6 assessments. 
+                            <a href="{{ url_for('assessment_periods') }}" class="text-primary">View all {{ projects|length }} assessments</a>
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Officers Assigned</h5>
+                        <p class="text-muted">Create assessment assignments to see progress here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+                    <a href="{{ url_for('assessment_activity_logs') }}?period_id={{ period.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i>View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_logs %}
+                    <div class="activity-feed">
+                        {% for log in recent_logs %}
+                        <div class="activity-item">
+                            <div class="activity-icon 
+                                {% if log.event_type == 'task_generated' %}bg-info
+                                {% elif log.event_type == 'draft_saved' %}bg-warning
+                                {% elif log.event_type == 'assessment_submitted' %}bg-primary
+                                {% elif log.event_type in ['admin_review_completed', 'final_approval_completed'] %}bg-success
+                                {% elif log.event_type == 'results_released' %}bg-purple
+                                {% elif log.event_type == 'assessment_closed' %}bg-dark
+                                {% else %}bg-secondary{% endif %}">
+                                <i class="fas fa-
+                                    {% if log.event_type == 'task_generated' %}tasks
+                                    {% elif log.event_type == 'draft_saved' %}save
+                                    {% elif log.event_type == 'assessment_submitted' %}paper-plane
+                                    {% elif log.event_type in ['admin_review_started', 'admin_review_completed'] %}user-check
+                                    {% elif log.event_type == 'reviewers_released' %}rocket
+                                    {% elif log.event_type in ['final_approval_started', 'final_approval_completed'] %}trophy
+                                    {% elif log.event_type == 'results_released' %}share
+                                    {% elif log.event_type == 'reviewee_acknowledged' %}thumbs-up
+                                    {% elif log.event_type == 'assessment_closed' %}flag-checkered
+                                    {% else %}circle{% endif %}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">
+                                    <strong>{{ log.event_type.replace('_', ' ').title() }}</strong>
+                                    - {{ log.description }}
+                                </div>
+                                <div class="activity-meta">
+                                    <span class="text-muted">{{ log.timestamp.strftime('%b %d at %I:%M %p') }}</span>
+                                    {% if log.officer %}
+                                    <span class="badge bg-light text-dark ms-2">{{ log.officer.name }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock text-muted" style="font-size: 2rem;"></i>
+                        <h6 class="text-muted mt-2">No Recent Activity</h6>
+                        <p class="text-muted mb-0">Assessment activities will appear here as they occur.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #10B981, #059669);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.officer-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.officer-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.officer-header h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.chart-container {
+    height: 300px;
+    overflow: hidden;
+}
+
+.gauge-container {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-feed {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-text {
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.activity-meta {
+    font-size: 0.875rem;
+}
+
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+/* Custom scrollbar for activity feed */
+.activity-feed::-webkit-scrollbar {
+    width: 6px;
+}
+
+.activity-feed::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.activity-feed::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.activity-feed::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .officer-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .chart-container,
+    .gauge-container {
+        height: 250px;
+    }
+}
+
+/* Animation for cards */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.stats-card:nth-child(1) { animation-delay: 0.1s; }
+.stats-card:nth-child(2) { animation-delay: 0.2s; }
+.stats-card:nth-child(3) { animation-delay: 0.3s; }
+.stats-card:nth-child(4) { animation-delay: 0.4s; }
+</style>
+
+<script>
+// Auto-refresh dashboard every 60 seconds
+setInterval(function() {
+    // You can add AJAX refresh functionality here
+    console.log('Dashboard refresh check');
+}, 60000);
+
+// Add smooth animations
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate stats cards
+    const statsCards = document.querySelectorAll('.stats-card');
+    statsCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+    
+    // Animate officer cards
+    const officerCards = document.querySelectorAll('.officer-card');
+    officerCards.forEach((card, index) => {
+        card.style.animationDelay = `${0.5 + index * 0.1}s`;
+        card.style.opacity = '0';
+        card.style.animation = 'fadeInUp 0.6s ease-out forwards';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{% if question %}Edit Question{% else %}Create Question{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        {% if question %}
+                            <i class="fas fa-edit me-2"></i>Edit Assessment Question
+                        {% else %}
+                            <i class="fas fa-question-circle me-2"></i>Create New Assessment Question
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.category_id.label(class="form-label fw-bold") }}
+                            {{ form.category_id(class="form-select") }}
+                            {% if form.category_id.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.category_id.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.text.label(class="form-label fw-bold") }}
+                            {{ form.text(class="form-control") }}
+                            {% if form.text.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.text.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_type.label(class="form-label fw-bold") }}
+                            {{ form.question_type(class="form-select", id="question_type") }}
+                            {% if form.question_type.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.question_type.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Rating Settings (shown only for rating type) -->
+                        <div id="rating_settings" class="mb-3">
+                            <label class="form-label fw-bold">Rating Scale Settings</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ form.min_rating.label(class="form-label") }}
+                                    {{ form.min_rating(class="form-control") }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.max_rating.label(class="form-label") }}
+                                    {{ form.max_rating(class="form-control") }}
+                                </div>
+                            </div>
+                            <div class="form-text">Define the rating scale range (e.g., 1-5 or 1-10)</div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.is_required(class="form-check-input") }}
+                                    {{ form.is_required.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-text">Required questions must be answered</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.is_active(class="form-check-input") }}
+                                    {{ form.is_active.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-text">Active questions appear in assessments</div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>Question Types
+                            </h6>
+                            <ul class="mb-0">
+                                <li><strong>Rating Scale:</strong> Numerical rating (1-5, 1-10, etc.)</li>
+                                <li><strong>Short Text:</strong> Single line text input</li>
+                                <li><strong>Long Text:</strong> Multi-line text area for detailed responses</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('admin_questions') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questionType = document.getElementById('question_type');
+    const ratingSettings = document.getElementById('rating_settings');
+    
+    function toggleRatingSettings() {
+        if (questionType.value === 'rating') {
+            ratingSettings.style.display = 'block';
+        } else {
+            ratingSettings.style.display = 'none';
+        }
+    }
+    
+    questionType.addEventListener('change', toggleRatingSettings);
+    toggleRatingSettings(); // Initial check
+});
+</script>
+{% endblock %}

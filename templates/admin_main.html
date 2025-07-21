@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Administration Dashboard - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Modern Header with Gradient -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body p-4 text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h2 mb-2 fw-light">
+                                <i class="fas fa-shield-alt me-3"></i>Administration Dashboard
+                            </h1>
+                            <p class="mb-0 opacity-75">Comprehensive performance management system</p>
+                        </div>
+                        <div class="d-flex gap-3">
+                            <a href="{{ url_for('reviewer_dashboard') }}" class="btn btn-light btn-sm">
+                                <i class="fas fa-tasks me-2"></i>My Tasks
+                            </a>
+                            <a href="{{ url_for('admin_activity_logs') }}" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-chart-line me-2"></i>Activity Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Assessment Projects Section - Moved to Top -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <h3 class="h4 mb-0 fw-semibold text-dark">
+                    <i class="fas fa-calendar-alt me-3 text-success"></i>Active Assessment Projects
+                </h3>
+                <div class="flex-grow-1 ms-3">
+                    <hr class="my-0">
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    {% if active_periods %}
+                    <div class="row">
+                        {% for period in active_periods %}
+                        <div class="col-lg-6 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="card-title fw-semibold mb-1">{{ period.name }}</h6>
+                                            <small class="text-muted">
+                                                {{ period.start_date.strftime('%m/%d/%Y') }} - {{ period.end_date.strftime('%m/%d/%Y') }}
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success">Active</span>
+                                    </div>
+                                    {% if period.due_date %}
+                                    <p class="text-muted small mb-2">
+                                        <i class="fas fa-clock me-1"></i>Due: {{ period.due_date.strftime('%m/%d/%Y') }}
+                                    </p>
+                                    {% endif %}
+                                    <div class="d-flex gap-1 mb-2">
+                                        <a href="{{ url_for('manage_assignments', period_id=period.id) }}" class="btn btn-outline-primary btn-sm flex-grow-1">
+                                            <i class="fas fa-users me-1"></i>Assignments
+                                        </a>
+                                        <a href="{{ url_for('period_progress', period_id=period.id) }}" class="btn btn-outline-success btn-sm flex-grow-1">
+                                            <i class="fas fa-chart-line me-1"></i>Progress
+                                        </a>
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ url_for('edit_assessment_period', period_id=period.id) }}" class="btn btn-outline-info btn-sm flex-grow-1">
+                                            <i class="fas fa-edit me-1"></i>Edit
+                                        </a>
+                                        <a href="{{ url_for('clone_assessment_period', period_id=period.id) }}" class="btn btn-outline-warning btn-sm flex-grow-1">
+                                            <i class="fas fa-copy me-1"></i>Clone
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No Active Assessment Projects</h6>
+                        <p class="text-muted small">Create your first assessment project to start organizing performance evaluations.</p>
+                        <a href="{{ url_for('create_assessment_period') }}" class="btn btn-primary btn-sm mt-2">
+                            <i class="fas fa-plus me-1"></i>Create Period
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Management Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <h3 class="h4 mb-0 fw-semibold text-dark">
+                    <i class="fas fa-calendar-check me-3 text-primary"></i>Assessment Management
+                </h3>
+                <div class="flex-grow-1 ms-3">
+                    <hr class="my-0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Project Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-plus fa-2x text-primary"></i>
+                    </div>
+                    <h5 class="card-title fw-semibold">Create Assessment Project</h5>
+                    <p class="card-text text-muted small">Set up a new performance evaluation cycle</p>
+                    <a href="{{ url_for('create_assessment_period') }}" class="btn btn-primary btn-sm px-4">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-list fa-2x text-info"></i>
+                    </div>
+                    <h5 class="card-title fw-semibold">Manage Periods</h5>
+                    <p class="card-text text-muted small">View and edit existing assessment projects</p>
+                    <a href="{{ url_for('assessment_periods') }}" class="btn btn-info btn-sm px-4">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-cog fa-2x text-success"></i>
+                    </div>
+                    <h5 class="card-title fw-semibold">Assessment Forms</h5>
+                    <p class="card-text text-muted small">Create and manage evaluation templates</p>
+                    <a href="{{ url_for('assessment_forms') }}" class="btn btn-success btn-sm px-4">
+                        Manage Forms
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <h3 class="h4 mb-0 fw-semibold text-dark">
+                    <i class="fas fa-users-cog me-3 text-success"></i>User Management
+                </h3>
+                <div class="flex-grow-1 ms-3">
+                    <hr class="my-0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-user-plus fa-2x text-primary"></i>
+                    </div>
+                    <h5 class="card-title fw-semibold">Add New User</h5>
+                    <p class="card-text text-muted small">Create accounts for board members and officers</p>
+                    <a href="{{ url_for('create_user') }}" class="btn btn-primary btn-sm px-4">
+                        Create User
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-2x text-info"></i>
+                    </div>
+                    <h5 class="card-title fw-semibold">Manage Users</h5>
+                    <p class="card-text text-muted small">View, edit, and manage all user accounts</p>
+                    <a href="{{ url_for('manage_users') }}" class="btn btn-info btn-sm px-4">
+                        View All Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview Stats -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <h3 class="h4 mb-0 fw-semibold text-dark">
+                    <i class="fas fa-chart-bar me-3 text-warning"></i>System Overview
+                </h3>
+                <div class="flex-grow-1 ms-3">
+                    <hr class="my-0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-2x text-primary"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark">{{ total_officers }}</h3>
+                    <p class="text-muted small mb-0">Officers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="fas fa-user-tie fa-2x text-info"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark">{{ total_board_members }}</h3>
+                    <p class="text-muted small mb-0">Board Members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="fas fa-clipboard-check fa-2x text-success"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark">{{ total_assessments }}</h3>
+                    <p class="text-muted small mb-0">Total Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <i class="fas fa-chart-line fa-2x text-warning"></i>
+                    </div>
+                    <h3 class="fw-bold text-dark">{{ "%.1f"|format((total_assessments / (total_officers * total_board_members) * 100) if total_officers and total_board_members else 0) }}%</h3>
+                    <p class="text-muted small mb-0">Completion Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.card {
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.text-success {
+    color: #198754 !important;
+}
+</style>
+
+{% endblock %}

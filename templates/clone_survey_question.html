@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Clone Question - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Clone Question in "{{ survey_form.title }}"</h3>
+                    <small class="text-muted">Cloning: {{ original_question.question_name }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Quick Clone:</strong> All settings from the original question have been copied. 
+                        Update the question name and content as needed, then save to create your new question.
+                    </div>
+
+                    <form method="POST" id="questionForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.question_name.label(class="form-label") }}
+                            {{ form.question_name(class="form-control") }}
+                            {% if form.question_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_name.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Edit the question label to make it unique</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_text.label(class="form-label") }}
+                            {{ form.question_text(class="form-control") }}
+                            {% if form.question_text.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_text.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.question_type.label(class="form-label") }}
+                            {{ form.question_type(class="form-select", onchange="updateQuestionSettings()") }}
+                            {% if form.question_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question_type.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_required(class="form-check-input") }}
+                                {{ form.is_required.label(class="form-check-label") }}
+                            </div>
+                        </div>
+
+                        <!-- Rating Scale Settings -->
+                        <div id="ratingSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Rating Scale Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.rating_min.label(class="form-label") }}
+                                            {{ form.rating_min(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.rating_max.label(class="form-label") }}
+                                            {{ form.rating_max(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ form.rating_labels.label(class="form-label") }}
+                                        {{ form.rating_labels(class="form-control") }}
+                                        <small class="form-text text-muted">Optional: Define labels for each rating value</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options Settings (for checkbox, dropdown, multiple choice) -->
+                        <div id="optionsSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Answer Options</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        {{ form.options.label(class="form-label") }}
+                                        {{ form.options(class="form-control") }}
+                                        <small class="form-text text-muted">Enter each option on a new line</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Settings -->
+                        <div id="textSettings" class="mb-3" style="display: none;">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Text Input Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.max_length.label(class="form-label") }}
+                                            {{ form.max_length(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            {{ form.placeholder.label(class="form-label") }}
+                                            {{ form.placeholder(class="form-control") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('edit_survey_form', form_id=survey_form.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Form
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-clone"></i> Clone Question
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateQuestionSettings() {
+    const questionType = document.getElementById('question_type').value;
+    
+    // Hide all settings first
+    document.getElementById('ratingSettings').style.display = 'none';
+    document.getElementById('optionsSettings').style.display = 'none';
+    document.getElementById('textSettings').style.display = 'none';
+    
+    // Show relevant settings based on question type
+    if (questionType === 'rating') {
+        document.getElementById('ratingSettings').style.display = 'block';
+    } else if (['checkbox', 'dropdown', 'multiple_choice'].includes(questionType)) {
+        document.getElementById('optionsSettings').style.display = 'block';
+    } else if (['text', 'textarea'].includes(questionType)) {
+        document.getElementById('textSettings').style.display = 'block';
+    }
+}
+
+// Initialize settings display on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateQuestionSettings();
+});
+</script>
+{% endblock %}

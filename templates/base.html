@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AAA Performance Tracker{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Modern CSS -->
+    <link href="{{ url_for('static', filename='css/modern.css') }}" rel="stylesheet">
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Modern Single Navbar -->
+    <nav class="modern-navbar navbar navbar-expand-lg">
+        <div class="container-fluid px-4">
+            <!-- Logo and Brand -->
+            <div class="navbar-brand d-flex align-items-center">
+                <div class="brand-logo me-3">
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Background Circle with Soft Gradient -->
+                        <circle cx="18" cy="18" r="18" fill="url(#logoGradient)"/>
+                        
+                        <!-- Performance Graph Lines -->
+                        <path d="M8 24L12 20L16 18L20 14L24 12L28 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+                        <path d="M8 26L12 22L16 20L20 16L24 14L28 12" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+                        
+                        <!-- Achievement Star -->
+                        <path d="M18 6L19.5 11L24.5 11L20.5 14.5L22 19.5L18 16.5L14 19.5L15.5 14.5L11.5 11L16.5 11Z" fill="white" opacity="0.95"/>
+                        
+                        <!-- Excellence Dots -->
+                        <circle cx="10" cy="28" r="1.5" fill="white" opacity="0.8"/>
+                        <circle cx="14" cy="26" r="1.5" fill="white" opacity="0.8"/>
+                        <circle cx="22" cy="28" r="1.5" fill="white" opacity="0.8"/>
+                        <circle cx="26" cy="26" r="1.5" fill="white" opacity="0.8"/>
+                        
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#e2e8f0;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#cbd5e1;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#94a3b8;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="brand-text">AAA Performance Tracker</span>
+            </div>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navigation Content -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Main Navigation - Centered -->
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'assessment_periods' }}" href="{{ url_for('assessment_periods') }}">
+                            <i class="nav-icon fas fa-clipboard-check"></i>
+                            Assessments
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'my_tasks' }}" href="{{ url_for('my_tasks') }}">
+                            <i class="nav-icon fas fa-tasks"></i>
+                            My Tasks
+                            {% if current_user.role == 'admin' and admin_pending_count > 0 %}
+                            <span class="task-badge">{{ admin_pending_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="nav-icon fas fa-cog"></i>
+                            Admin
+                        </a>
+                        <ul class="dropdown-menu modern-dropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('admin_main') }}">
+                                <i class="fas fa-tachometer-alt"></i>Admin Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('assessment_periods') }}">
+                                <i class="fas fa-project-diagram"></i>Assessment Projects
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('assessment_forms') }}">
+                                <i class="fas fa-file-text"></i>Assessment Forms
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('manage_users') }}">
+                                <i class="fas fa-users"></i>Manage Users
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_activity_logs') }}">
+                                <i class="fas fa-activity"></i>Activity Logs
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_documentation') }}">
+                                <i class="fas fa-book"></i>Documentation & Help
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_main') }}">
+                                <i class="fas fa-history"></i>Approval History
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('reports') }}">
+                                <i class="fas fa-chart-bar"></i>Reports
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- User Menu -->
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link user-menu" href="#" role="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar">
+                                <span class="user-initials">{{ current_user.name[0]|upper }}</span>
+                            </div>
+                            <div class="user-info d-none d-md-block">
+                                <div class="user-name">{{ current_user.name }}</div>
+                                <div class="user-role">{{ current_user.role|title }}</div>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end modern-dropdown">
+                            <li class="dropdown-header">
+                                <div class="user-details">
+                                    <div class="fw-medium">{{ current_user.name }}</div>
+                                    <div class="text-muted small">{{ current_user.role|title }}</div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt"></i>Sign Out
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="container-fluid main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-3 mt-5 border-top">
+        <div class="container">
+            <small>&copy; 2025 AAA Performance Tracker. Professional executive assessment platform.</small>
+        </div>
+    </footer>
+    
+    <!-- Admin AI Chatbot (only for admins) -->
+    {% if current_user.is_authenticated and current_user.role == 'admin' %}
+        {% include 'admin_chatbot.html' %}
+    {% endif %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,66 @@
+jinja2.exceptions.TemplateNotFound: admin_chatbot.html
+
+Traceback (most recent call last)
+File "/opt/venv/lib/python3.12/site-packages/flask/app.py", line 1536, in __call__
+return self.wsgi_app(environ, start_response)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/werkzeug/middleware/proxy_fix.py", line 183, in __call__
+return self.app(environ, start_response)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/app.py", line 1514, in wsgi_app
+response = self.handle_exception(e)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/app.py", line 1511, in wsgi_app
+response = self.full_dispatch_request()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/app.py", line 919, in full_dispatch_request
+rv = self.handle_user_exception(e)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+rv = self.dispatch_request()
+     ^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
+return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+return current_app.ensure_sync(func)(*args, **kwargs)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/app/routes.py", line 74, in dashboard
+return admin_dashboard()
+       ^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+return current_app.ensure_sync(func)(*args, **kwargs)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/app/utils.py", line 24, in decorated_function
+return f(*args, **kwargs)
+       ^^^^^^^^^^^^^^^^^^
+File "/app/routes.py", line 545, in admin_dashboard
+return render_template('admin_dashboard.html',
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+return _render(app, template, context)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+rv = template.render(context)
+     ^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+self.environment.handle_exception()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+raise rewrite_traceback_stack(source=source)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/app/templates/admin_dashboard.html", line 1, in top-level template code
+{% extends "base.html" %}
+File "/app/templates/base.html", line 185, in top-level template code
+{% include 'admin_chatbot.html' %}
+File "/opt/venv/lib/python3.12/site-packages/flask/templating.py", line 65, in get_source
+return self._get_source_fast(environment, template)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/opt/venv/lib/python3.12/site-packages/flask/templating.py", line 99, in _get_source_fast
+raise TemplateNotFound(template)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.TemplateNotFound: admin_chatbot.html
+The debugger caught an exception in your WSGI application. You can now look at the traceback which led to the error.
+To switch between the interactive traceback and the plaintext one, you can click on the "Traceback" headline. From the text traceback you can also create a paste of it.
+
+Brought to you by DON'T PANIC, your friendly Werkzeug powered traceback interpreter.

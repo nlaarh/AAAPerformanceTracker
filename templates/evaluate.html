@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluate {{ officer.name }} - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-star me-2"></i>
+                    {% if current_user.id == officer.id %}
+                        Self-Assessment
+                    {% else %}
+                        Evaluate {{ officer.name }}
+                    {% endif %}
+                </h1>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <!-- Performance Assessment Questions -->
+        {% if not is_self_assessment and self_assessment_responses %}
+        <!-- Side-by-side layout for reviewers with self-assessment reference -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-info">
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="fas fa-user me-2"></i>{{ officer.name }}'s Self-Assessment (Reference)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            <small>Reference: See {{ officer.name }}'s self-assessment responses below for context.</small>
+                        </p>
+                        
+                        {% for question in self_assessment_questions %}
+                        {% set self_response = self_assessment_responses.get(question.id) %}
+                        <div class="mb-4 p-3 bg-light rounded">
+                            <label class="form-label fw-bold text-info">
+                                {{ question.question_name }}
+                            </label>
+                            
+                            {% if question.question_text != question.question_name %}
+                                <p class="text-muted small mb-2">{{ question.question_text }}</p>
+                            {% endif %}
+
+                            {% set settings = question.get_settings() if question.settings else {} %}
+                            
+                            {% if question.question_type == 'rating' %}
+                                {% if self_response and self_response.response_number %}
+                                <div class="alert alert-info mb-0">
+                                    <strong>Self-Rating: {{ self_response.response_number }}</strong>
+                                    {% set labels = settings.get('labels', []) %}
+                                    {% if labels and labels|length >= self_response.response_number %}
+                                        ({{ labels[self_response.response_number-1] }})
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="text-muted">No rating provided</div>
+                                {% endif %}
+                            
+                            {% elif question.question_type in ['text', 'textarea', 'multiple_choice'] %}
+                                {% if self_response and self_response.response_text %}
+                                <div class="alert alert-info mb-0">
+                                    <small>{{ self_response.response_text }}</small>
+                                </div>
+                                {% else %}
+                                <div class="text-muted">No response provided</div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary">
+                        <h5 class="card-title mb-0 text-white">
+                            <i class="fas fa-edit me-2"></i>{{ current_user.name }}'s Assessment
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            Please evaluate {{ officer.name }}'s performance by answering each question:
+                        </p>
+        {% else %}
+        <!-- Standard single-column layout for self-assessments -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Performance Assessment
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            {% if current_user.id == officer.id %}
+                                Please complete your self-assessment by providing ratings for each question:
+                            {% else %}
+                                Please evaluate {{ officer.name }}'s performance by answering each question:
+                            {% endif %}
+                        </p>
+        {% endif %}
+                        
+                        {% if questions %}
+                        <!-- Display assessment questions exactly like preview form -->
+                        {% for question in questions %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                {{ question.question_name }}
+                                {% if question.is_required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {% if question.question_text != question.question_name %}
+                                <p class="text-muted small mb-2">{{ question.question_text }}</p>
+                            {% endif %}
+
+                            {% set settings = question.get_settings() if question.settings else {} %}
+                            
+                            {% if question.question_type == 'rating' %}
+                                <div class="d-flex gap-3 flex-wrap">
+                                    {% set min_rating = settings.get('min_rating', 1) %}
+                                    {% set max_rating = settings.get('max_rating', 5) %}
+                                    {% set labels = settings.get('labels', []) %}
+                                    {% set existing_value = existing_responses.get(question.id).response_number if existing_responses.get(question.id) else none %}
+                                    
+                                    {% for i in range(min_rating, max_rating + 1) %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_{{ i }}" value="{{ i }}" {% if question.is_required %}required{% endif %} {% if existing_value and existing_value|int == i %}checked{% endif %}>
+                                            <label class="form-check-label" for="q{{ question.id }}_{{ i }}">
+                                                {% if labels and labels|length >= i %}
+                                                    {{ labels[i-1] }}
+                                                {% else %}
+                                                    {{ i }}
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            
+                            {% elif question.question_type == 'text' %}
+                                {% set placeholder = settings.get('placeholder', '') %}
+                                {% set max_length = settings.get('max_chars', 500) %}
+                                {% set existing_value = existing_responses.get(question.id).response_text if existing_responses.get(question.id) else '' %}
+                                <input type="text" class="form-control" name="question_{{ question.id }}" id="q{{ question.id }}" placeholder="{{ placeholder }}" maxlength="{{ max_length }}" value="{{ existing_value }}" {% if question.is_required %}required{% endif %}>
+                                <small class="form-text text-muted">Maximum {{ max_length }} characters</small>
+                            
+                            {% elif question.question_type == 'textarea' %}
+                                {% set placeholder = settings.get('placeholder', '') %}
+                                {% set max_length = settings.get('max_chars', 2000) %}
+                                {% set existing_value = existing_responses.get(question.id).response_text if existing_responses.get(question.id) else '' %}
+                                <textarea class="form-control" name="question_{{ question.id }}" id="q{{ question.id }}" rows="4" placeholder="{{ placeholder }}" maxlength="{{ max_length }}" {% if question.is_required %}required{% endif %}>{{ existing_value }}</textarea>
+                                <small class="form-text text-muted">Maximum {{ max_length }} characters</small>
+                            
+                            {% elif question.question_type == 'checkbox' %}
+                                {% set options = settings.get('options', []) %}
+                                {% for option in options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="question_{{ question.id }}" id="q{{ question.id }}_{{ loop.index }}" value="{{ option }}">
+                                        <label class="form-check-label" for="q{{ question.id }}_{{ loop.index }}">{{ option }}</label>
+                                    </div>
+                                {% endfor %}
+                            
+                            {% elif question.question_type == 'dropdown' %}
+                                {% set options = settings.get('options', []) %}
+                                <select class="form-select" name="question_{{ question.id }}" id="q{{ question.id }}" {% if question.is_required %}required{% endif %}>
+                                    <option value="">Select an option...</option>
+                                    {% for option in options %}
+                                        <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            
+                            {% elif question.question_type == 'multiple_choice' %}
+                                {% set options = settings.get('options', []) %}
+                                {% set existing_value = existing_responses.get(question.id).response_text if existing_responses.get(question.id) else '' %}
+                                {% for option in options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_{{ loop.index }}" value="{{ option }}" {% if question.is_required %}required{% endif %} {% if existing_value == option %}checked{% endif %}>
+                                        <label class="form-check-label" for="q{{ question.id }}_{{ loop.index }}">{{ option }}</label>
+                                    </div>
+                                {% endfor %}
+                            
+                            {% elif question.question_type == 'boolean' %}
+                                {% set existing_value = existing_responses.get(question.id).response_text if existing_responses.get(question.id) else '' %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_yes" value="true" {% if question.is_required %}required{% endif %} {% if existing_value == 'true' %}checked{% endif %}>
+                                    <label class="form-check-label" for="q{{ question.id }}_yes">Yes</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_no" value="false" {% if question.is_required %}required{% endif %} {% if existing_value == 'false' %}checked{% endif %}>
+                                    <label class="form-check-label" for="q{{ question.id }}_no">No</label>
+                                </div>
+                            
+                            {% elif question.question_type == 'date' %}
+                                {% set existing_response = existing_responses.get(question.id) %}
+                                {% set existing_value = existing_response.response_date.strftime('%Y-%m-%d') if (existing_response and existing_response.response_date) else (existing_response.response_text if existing_response else '') %}
+                                <input type="date" class="form-control" name="question_{{ question.id }}" id="q{{ question.id }}" value="{{ existing_value }}" {% if question.is_required %}required{% endif %}>
+                            
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Unknown question type: {{ question.question_type }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">No Assessment Questions Available</h6>
+                            <p class="mb-0">There are no active assessment questions configured for this evaluation. Please contact your administrator to set up the assessment questions.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not is_self_assessment and self_assessment_responses %}
+                <!-- Close the right column for side-by-side layout -->
+            </div>
+        </div>
+                {% else %}
+                <!-- Close the single column layout -->
+            </div>
+        </div>
+                {% endif %}
+        
+        <!-- Submit Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Assessment Actions</h6>
+                                <small class="text-muted">Save progress or submit your completed assessment.</small>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="confirmCancel()">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="saveDraft()">
+                                    <i class="fas fa-save me-1"></i>Save Draft
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="confirmSubmit()">
+                                    <i class="fas fa-paper-plane me-1"></i>Submit Final
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add visual feedback for rating selection
+document.addEventListener('DOMContentLoaded', function() {
+    const radioButtons = document.querySelectorAll('input[type="radio"]');
+    
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Remove active class from siblings
+            const name = this.name;
+            const siblings = document.querySelectorAll(`input[name="${name}"]`);
+            siblings.forEach(sibling => {
+                const label = document.querySelector(`label[for="${sibling.id}"]`);
+                label.classList.remove('btn-primary');
+                label.classList.add('btn-outline-primary');
+            });
+            
+            // Add active class to selected
+            const selectedLabel = document.querySelector(`label[for="${this.id}"]`);
+            selectedLabel.classList.remove('btn-outline-primary');
+            selectedLabel.classList.add('btn-primary');
+        });
+    });
+});
+
+// Confirmation functions for form actions
+function confirmCancel() {
+    if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+        window.location.href = '{{ url_for("my_assignments") }}';
+    }
+}
+
+function saveDraft() {
+    // Create hidden input for save action
+    const form = document.querySelector('form');
+    
+    // Remove any existing action inputs
+    const existingAction = form.querySelector('input[name="action"]');
+    if (existingAction) {
+        existingAction.remove();
+    }
+    
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'action';
+    hiddenInput.value = 'save';
+    form.appendChild(hiddenInput);
+    form.submit();
+}
+
+function confirmSubmit() {
+    if (confirm('Are you sure you want to submit this assessment? Once submitted, you will not be able to make any changes.')) {
+        // Create hidden input for submit action
+        const form = document.querySelector('form');
+        
+        // Remove any existing action inputs
+        const existingAction = form.querySelector('input[name="action"]');
+        if (existingAction) {
+            existingAction.remove();
+        }
+        
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'action';
+        hiddenInput.value = 'submit';
+        form.appendChild(hiddenInput);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

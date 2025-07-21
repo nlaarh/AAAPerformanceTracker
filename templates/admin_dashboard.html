@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6">
+                <i class="fas fa-tachometer-alt me-3 text-primary"></i>Admin Dashboard
+            </h1>
+            <p class="text-muted mb-0">Monitor assessment progress and system performance</p>
+        </div>
+        <div>
+            {% if current_period %}
+            <span class="badge bg-success fs-6">{{ current_period.name }}</span>
+            {% else %}
+            <span class="badge bg-warning fs-6">No Active Period</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if current_period %}
+    <!-- Key Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 metric-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="metric-icon bg-primary">
+                            <i class="fas fa-tasks text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="metric-value">{{ total_assignments }}</div>
+                        <div class="metric-label">Total Assignments</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 metric-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="metric-icon bg-success">
+                            <i class="fas fa-check-circle text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="metric-value">{{ completed_assignments }}</div>
+                        <div class="metric-label">Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 metric-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="metric-icon bg-warning">
+                            <i class="fas fa-clock text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="metric-value">{{ pending_assignments }}</div>
+                        <div class="metric-label">Pending</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 metric-card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="metric-icon bg-info">
+                            <i class="fas fa-percentage text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="metric-value">{{ completion_rate }}%</div>
+                        <div class="metric-label">Completion Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Charts Row -->
+    <div class="row mb-4">
+        <!-- Completion Progress Chart -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>Assessment Progress by Officer
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="progressChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Completion Rate Donut -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2 text-success"></i>Overall Progress
+                    </h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="completionChart" width="200" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Officer Progress Table -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2 text-info"></i>Officer Assessment Progress
+                    </h5>
+                    <small class="text-muted">{{ current_period.name }}</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if assignments_by_officer %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Officer</th>
+                                    <th>Total Reviews</th>
+                                    <th>Completed</th>
+                                    <th>Progress</th>
+                                    <th>AI Report</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments_by_officer %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-circle text-muted me-2"></i>
+                                            <strong>{{ assignment.officer_name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ assignment.total_reviews }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ assignment.completed_reviews or 0 }}</span>
+                                    </td>
+                                    <td>
+                                        {% set progress = ((assignment.completed_reviews or 0) / assignment.total_reviews * 100) | round(1) %}
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar 
+                                            {% if progress == 100 %}bg-success
+                                            {% elif progress >= 50 %}bg-warning
+                                            {% else %}bg-danger{% endif %}" 
+                                            role="progressbar" style="width: {{ progress }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ progress }}%</small>
+                                    </td>
+                                    <td>
+                                        {% if assignment.ai_report_count > 0 %}
+                                            <a href="{{ url_for('download_ai_report', officer_id=assignment.officer_id) }}" 
+                                               class="btn btn-sm btn-outline-success" 
+                                               title="Download AI Report PDF">
+                                                <i class="fas fa-file-pdf me-1"></i>PDF
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted small">
+                                                <i class="fas fa-ban me-1"></i>No report
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{{ url_for('officer_reviews', officer_id=assignment.officer_id) }}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Assessment Matrix">
+                                                <i class="fas fa-table"></i>
+                                            </a>
+                                            <a href="{{ url_for('assessment_activity_logs') }}?officer_id={{ assignment.officer_id }}" 
+                                               class="btn btn-sm btn-outline-info" 
+                                               title="Activity Log">
+                                                <i class="fas fa-history"></i>
+                                            </a>
+                                            <a href="{{ url_for('officer_task_status', officer_id=assignment.officer_id) }}" 
+                                               class="btn btn-sm btn-outline-warning" 
+                                               title="Task Status">
+                                                <i class="fas fa-tasks"></i>
+                                            </a>
+                                            <a href="/admin/officer/{{ assignment.officer_id }}/all_reviews" 
+                                               class="btn btn-sm btn-outline-success" 
+                                               title="View All Assessments">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('officer_task_status', officer_id=assignment.officer_id) }}" 
+                                               class="btn btn-sm btn-outline-secondary" 
+                                               title="Workflow Progress">
+                                                <i class="fas fa-project-diagram"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h6>No Officer Assignments</h6>
+                        <p class="text-muted">Create assessment assignments to see progress here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reviewer Progress -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-tie me-2 text-warning"></i>Reviewer Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if reviewer_progress %}
+                    {% for reviewer in reviewer_progress %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong class="d-block">{{ reviewer.reviewer_name }}</strong>
+                            <small class="text-muted">{{ reviewer.completed or 0 }}/{{ reviewer.total_assigned }} completed</small>
+                        </div>
+                        <div>
+                            {% set reviewer_rate = ((reviewer.completed or 0) / reviewer.total_assigned * 100) | round(1) %}
+                            <span class="badge 
+                            {% if reviewer_rate == 100 %}bg-success
+                            {% elif reviewer_rate >= 50 %}bg-warning
+                            {% else %}bg-danger{% endif %}">
+                                {{ reviewer_rate }}%
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-user-tie fa-2x text-muted mb-2"></i>
+                        <p class="text-muted small">No reviewer assignments</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- No Active Period Message -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-calendar-plus fa-4x text-muted mb-4"></i>
+                    <h4>No Active Assessment Project</h4>
+                    <p class="text-muted mb-4">Create an assessment project to start tracking progress and assignments.</p>
+                    <a href="{{ url_for('assessment_periods') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Create Assessment Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Monthly Trend Chart -->
+    {% if current_period %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-area me-2 text-info"></i>Assessment Trend (2025)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+{% if current_period %}
+// Progress Chart Data
+const progressData = {
+    labels: [{% for assignment in assignments_by_officer %}'{{ assignment.officer_name }}'{{ ',' if not loop.last }}{% endfor %}],
+    datasets: [{
+        label: 'Total Reviews',
+        data: [{% for assignment in assignments_by_officer %}{{ assignment.total_reviews }}{{ ',' if not loop.last }}{% endfor %}],
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+    }, {
+        label: 'Completed Reviews',
+        data: [{% for assignment in assignments_by_officer %}{{ assignment.completed_reviews or 0 }}{{ ',' if not loop.last }}{% endfor %}],
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+    }]
+};
+
+// Progress Chart
+const progressCtx = document.getElementById('progressChart').getContext('2d');
+new Chart(progressCtx, {
+    type: 'bar',
+    data: progressData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        }
+    }
+});
+
+// Completion Rate Chart
+const completionCtx = document.getElementById('completionChart').getContext('2d');
+new Chart(completionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'Pending'],
+        datasets: [{
+            data: [{{ completed_assignments }}, {{ pending_assignments }}],
+            backgroundColor: ['#28a745', '#ffc107'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Monthly Trend Chart
+const trendData = {
+    labels: [{% for month in monthly_data %}'{{ month.month_name }}'{{ ',' if not loop.last }}{% endfor %}],
+    datasets: [{
+        label: 'Assessments Completed',
+        data: [{% for month in monthly_data %}{{ month.count }}{{ ',' if not loop.last }}{% endfor %}],
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+        fill: true,
+        tension: 0.4
+    }]
+};
+
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: trendData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+{% endif %}
+
+// Removed old modal functionality - now using dedicated page
+</script>
+
+<style>
+.metric-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+}
+
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1.25rem 1.5rem;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.badge {
+    border-radius: 8px;
+}
+
+.assessment-section {
+    border-left: 4px solid #007bff;
+    padding-left: 1rem;
+}
+
+.assessment-section:last-child {
+    border-left-color: #28a745;
+}
+</style>
+
+<!-- Modal removed - now using dedicated page for viewing all reviews -->
+
+{% endblock %}

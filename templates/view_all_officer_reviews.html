@@ -1,0 +1,573 @@
+{% extends "base.html" %}
+
+{% block title %}All Reviews - {{ officer.name }} - AAA Performance Tracker{% endblock %}
+
+{% block head %}
+<style>
+/* Force text alignment after Bootstrap loads */
+.border.p-3.bg-light.rounded,
+.text-response div,
+.multiple-choice-response div, 
+.default-response div,
+.assessment-form-display * {
+    text-align: left !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-clipboard-list me-2"></i>All Reviews for {{ officer.name }}
+                </h1>
+                <div>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if reviews %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-circle me-2"></i>{{ officer.name }} - {{ officer.email }}
+                        <span class="badge bg-info ms-2">{{ reviews|length }} Review{{ 's' if reviews|length != 1 else '' }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs mb-4" id="reviewTabs" role="tablist">
+                        {% for review in reviews %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if loop.first %}active{% endif %}" 
+                                    id="review-{{ loop.index }}-tab" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#review-{{ loop.index }}" 
+                                    type="button" 
+                                    role="tab" 
+                                    aria-controls="review-{{ loop.index }}" 
+                                    aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+                                {% if review.is_self_assessment %}
+                                    <i class="fas fa-user me-2"></i>Self-Assessment
+                                {% else %}
+                                    <i class="fas fa-user-tie me-2"></i>{{ review.reviewer_name }}
+                                {% endif %}
+                            </button>
+                        </li>
+                        {% endfor %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" 
+                                    id="all-reviews-tab" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#all-reviews" 
+                                    type="button" 
+                                    role="tab" 
+                                    aria-controls="all-reviews" 
+                                    aria-selected="false">
+                                <i class="fas fa-file-pdf me-2"></i>All Reviews (Print/PDF)
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab panes -->
+                    <div class="tab-content" id="reviewTabsContent">
+                        {% for review in reviews %}
+                        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                             id="review-{{ loop.index }}" 
+                             role="tabpanel" 
+                             aria-labelledby="review-{{ loop.index }}-tab">
+                            
+                            <!-- Review Header -->
+                            <div class="row mb-4">
+                                <div class="col-md-8">
+                                    <div class="card border-0 bg-light">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6 class="text-muted">Reviewer Information</h6>
+                                                    <p class="mb-1"><strong>{{ review.reviewer_name }}</strong></p>
+                                                    <p class="mb-1 text-muted">{{ review.reviewer_email }}</p>
+                                                    {% if review.is_self_assessment %}
+                                                        <span class="badge bg-primary">Self-Assessment</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">External Review</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6 class="text-muted">Submission Details</h6>
+                                                    {% if review.submitted_at %}
+                                                        <p class="mb-1">
+                                                            <i class="fas fa-calendar me-1"></i>
+                                                            {{ review.submitted_at.strftime('%B %d, %Y') }}
+                                                        </p>
+                                                        <p class="mb-1 text-muted">
+                                                            <i class="fas fa-clock me-1"></i>
+                                                            {{ review.submitted_at.strftime('%I:%M %p') }}
+                                                        </p>
+                                                    {% else %}
+                                                        <p class="mb-1 text-muted">Submission date not available</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Review Content - Survey Format -->
+                            <div class="assessment-form-display">
+                                {% for response in review.ordered_responses %}
+                                        <div class="question-group mb-4">
+                                            <!-- Question Label -->
+                                            <div class="question-label mb-2">
+                                                <strong>{{ response.question_label }}</strong>
+                                            </div>
+                                            
+                                            <!-- Question Text -->
+                                            <div class="question-text text-muted mb-3">
+                                                {{ response.question_text }}
+                                            </div>
+                                            
+                                            <!-- Response Display -->
+                                            <div class="response-display">
+                                                {% if response.question_type == 'rating' %}
+                                                    <!-- Rating Response -->
+                                                    <div class="rating-response">
+                                                        <div class="d-flex align-items-center gap-3">
+                                                            {% for i in range(1, 6) %}
+                                                                <label class="form-check-label">
+                                                                    <input type="radio" class="form-check-input me-1" 
+                                                                           {% if response.response_number == i %}checked{% endif %} 
+                                                                           disabled>
+                                                                    {{ i }}
+                                                                </label>
+                                                            {% endfor %}
+                                                        </div>
+                                                        <div class="mt-2">
+                                                            <span class="badge bg-primary">Selected: {{ response.response_number or 'None' }}/5</span>
+                                                        </div>
+                                                    </div>
+                                                
+                                                {% elif response.question_type in ['text', 'textarea'] %}
+                                                    <!-- Text Response -->
+                                                    <div class="text-response">
+                                                        <div class="form-control-plaintext border p-3 bg-light rounded" style="text-align: left !important;">
+                                                            {{ response.response_text or 'No response provided' }}
+                                                        </div>
+                                                    </div>
+                                                
+                                                {% elif response.question_type == 'date' %}
+                                                    <!-- Date Response -->
+                                                    <div class="date-response">
+                                                        <div class="form-control-plaintext border p-3 bg-light rounded" style="text-align: left !important;">
+                                                            {% if response.response_date %}
+                                                                <i class="fas fa-calendar me-2"></i>
+                                                                {{ response.response_date.strftime('%B %d, %Y') }}
+                                                            {% else %}
+                                                                No date selected
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                
+                                                {% elif response.question_type == 'multiple_choice' %}
+                                                    <!-- Multiple Choice Response -->
+                                                    <div class="multiple-choice-response">
+                                                        <div class="form-control-plaintext border p-3 bg-light rounded" style="text-align: left !important;">
+                                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                                            {{ response.response_text or 'No selection made' }}
+                                                        </div>
+                                                    </div>
+                                                
+                                                {% else %}
+                                                    <!-- Default Response -->
+                                                    <div class="default-response">
+                                                        <div class="form-control-plaintext border p-3 bg-light rounded" style="text-align: left !important;">
+                                                            {{ response.response_text or 'No response provided' }}
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- All Reviews Combined Tab -->
+                        <div class="tab-pane fade" id="all-reviews" role="tabpanel" aria-labelledby="all-reviews-tab">
+                            <div class="print-friendly-content">
+                                <div class="mb-4 d-print-none">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Print/PDF Ready:</strong> This tab contains all reviews combined for easy printing or PDF generation. 
+                                        Use your browser's print function (Ctrl+P or Cmd+P) to create a PDF.
+                                    </div>
+                                </div>
+                                
+                                <div class="assessment-header mb-4">
+                                    <h2 class="text-center mb-3">Assessment Review Summary</h2>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5><i class="fas fa-user me-2"></i>{{ officer.name }}</h5>
+                                            <p class="text-muted">{{ officer.email }}</p>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <p class="mb-1"><strong>Total Reviews:</strong> {{ reviews|length }}</p>
+                                            <p class="mb-1"><strong>Generated:</strong> {{ current_date.strftime('%B %d, %Y') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% for review in reviews %}
+                                <div class="reviewer-section mb-5 page-break-inside-avoid">
+                                    <div class="reviewer-header mb-3">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <h4 class="mb-1">
+                                                    {% if review.is_self_assessment %}
+                                                        <i class="fas fa-user me-2 text-primary"></i>Self-Assessment
+                                                    {% else %}
+                                                        <i class="fas fa-user-tie me-2 text-secondary"></i>{{ review.reviewer_name }}
+                                                    {% endif %}
+                                                </h4>
+                                                <p class="text-muted mb-0">{{ review.reviewer_email }}</p>
+                                            </div>
+                                            <div class="col-md-4 text-end">
+                                                {% if review.submitted_at %}
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar me-1"></i>
+                                                        {{ review.submitted_at.strftime('%B %d, %Y') }}
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Review Content for This Reviewer -->
+                                    <div class="assessment-form-display">
+                                        {% for response in review.ordered_responses %}
+                                                <div class="question-group mb-4">
+                                                    <!-- Question Label -->
+                                                    <div class="question-label mb-2">
+                                                        <strong>{{ response.question_label }}</strong>
+                                                    </div>
+                                                    
+                                                    <!-- Question Text -->
+                                                    <div class="question-text text-muted mb-3">
+                                                        {{ response.question_text }}
+                                                    </div>
+                                                    
+                                                    <!-- Response Display -->
+                                                    <div class="response-display">
+                                                        {% if response.question_type == 'rating' %}
+                                                            <!-- Rating Response -->
+                                                            <div class="rating-response">
+                                                                <div class="d-flex align-items-center gap-3">
+                                                                    {% for i in range(1, 6) %}
+                                                                        <label class="form-check-label">
+                                                                            <input type="radio" class="form-check-input me-1" 
+                                                                                   {% if response.response_number == i %}checked{% endif %} 
+                                                                                   disabled>
+                                                                            {{ i }}
+                                                                        </label>
+                                                                    {% endfor %}
+                                                                </div>
+                                                                <div class="mt-2">
+                                                                    <span class="badge bg-primary">Selected: {{ response.response_number or 'None' }}/5</span>
+                                                                </div>
+                                                            </div>
+                                                        
+                                                        {% elif response.question_type in ['text', 'textarea'] %}
+                                                            <div style="text-align: left; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">{{ response.response_text or 'No response provided' }}</div>
+                                                        
+                                                        {% elif response.question_type == 'date' %}
+                                                            <div style="text-align: left; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                                                {% if response.response_date %}
+                                                                    <i class="fas fa-calendar me-2"></i>{{ response.response_date.strftime('%B %d, %Y') }}
+                                                                {% else %}
+                                                                    {{ response.response_text or 'No date selected' }}
+                                                                {% endif %}
+                                                            </div>
+                                                        
+                                                        {% elif response.question_type == 'multiple_choice' %}
+                                                            <div style="text-align: left; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">
+                                                                <i class="fas fa-check-circle text-success me-2"></i>{{ response.response_text or 'No selection made' }}
+                                                            </div>
+                                                        
+                                                        {% else %}
+                                                            <div style="text-align: left; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px;">{{ response.response_text or 'No response provided' }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    {% if not loop.last %}
+                                    <hr class="my-5">
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-clipboard fa-3x text-muted mb-3"></i>
+                    <h5>No Reviews Found</h5>
+                    <p class="text-muted">No completed reviews are available for {{ officer.name }}.</p>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border-radius: 8px 8px 0 0;
+    padding: 12px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    border-color: #007bff #007bff #fff;
+    background-color: #fff;
+    font-weight: 600;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.tab-content {
+    min-height: 400px;
+}
+
+.card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge {
+    border-radius: 6px;
+}
+
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 123, 255, 0.03);
+}
+
+.border-bottom {
+    border-color: #dee2e6 !important;
+}
+
+.text-wrap {
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.assessment-form-display {
+    background-color: #fff;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa !important;
+}
+
+.section-content {
+    background-color: #fff;
+}
+
+/* Force left alignment for all text responses - Override Bootstrap */
+.text-response .form-control-plaintext,
+.multiple-choice-response .form-control-plaintext,
+.default-response .form-control-plaintext,
+.form-control-plaintext {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    display: block !important;
+}
+
+/* Additional override for any Bootstrap centering */
+.text-center,
+.d-flex.justify-content-center {
+    text-align: left !important;
+    justify-content: flex-start !important;
+}
+
+/* Force all response containers to left align */
+.assessment-form-display * {
+    text-align: left !important;
+}
+
+/* Override Bootstrap after it loads */
+.border.p-3.bg-light.rounded {
+    text-align: left !important;
+}
+
+.text-response div,
+.multiple-choice-response div,
+.default-response div {
+    text-align: left !important;
+}
+
+.question-group {
+    padding: 1rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.question-group:last-child {
+    border-bottom: none;
+}
+
+.question-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.question-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.response-display {
+    margin-top: 1rem;
+}
+
+.rating-response .form-check-label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 1rem;
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+    cursor: default;
+}
+
+.rating-response .form-check-input:checked + .form-check-label {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.form-control-plaintext {
+    min-height: 3rem;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.text-response .form-control-plaintext,
+.date-response .form-control-plaintext,
+.multiple-choice-response .form-control-plaintext,
+.default-response .form-control-plaintext {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1rem;
+    font-size: 0.95rem;
+}
+
+/* Print-friendly styles */
+@media print {
+    .d-print-none {
+        display: none !important;
+    }
+    
+    .print-friendly-content {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+    
+    .assessment-header {
+        border-bottom: 2px solid #000;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .reviewer-section {
+        page-break-inside: avoid;
+        margin-bottom: 2rem;
+    }
+    
+    .reviewer-header {
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 0.5rem;
+    }
+    
+    .form-section {
+        margin-bottom: 1rem;
+    }
+    
+    .section-header {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    .question-group {
+        margin-bottom: 1rem;
+    }
+    
+    .badge {
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    .text-primary {
+        color: #000 !important;
+    }
+    
+    .text-secondary {
+        color: #666 !important;
+    }
+}
+
+.page-break-inside-avoid {
+    page-break-inside: avoid;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="fas fa-chart-line me-2"></i>Performance Reports
+                </h1>
+                <a href="{{ url_for('export_csv') }}" class="btn btn-success">
+                    <i class="fas fa-download me-1"></i>Export All Data (CSV)
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    {% if officer_reports %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Officer Performance Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Officer</th>
+                                    <th>Assessments</th>
+                                    <th>Overall Avg</th>
+                                    {% for category in categories %}
+                                    <th class="text-center">{{ category.name }}</th>
+                                    {% endfor %}
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in officer_reports %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ report.officer.name }}</strong><br>
+                                        <small class="text-muted">{{ report.officer.email }}</small>
+                                    </td>
+                                    <td>{{ report.assessments_count }}</td>
+                                    <td>
+                                        <span class="badge {% if report.overall_average >= 4 %}bg-success{% elif report.overall_average >= 3 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                            {{ report.overall_average }}/5.0
+                                        </span>
+                                    </td>
+                                    {% for category in categories %}
+                                    <td class="text-center">
+                                        {% if report.category_averages[category.id] %}
+                                        <span class="badge {% if report.category_averages[category.id] >= 4 %}bg-success{% elif report.category_averages[category.id] >= 3 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ report.category_averages[category.id] }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                    <td>
+                                        <a href="{{ url_for('export_pdf', officer_id=report.officer.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-file-pdf me-1"></i>PDF Report
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Distribution Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Performance Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <h5>No Report Data Available</h5>
+                    <p class="text-muted">Performance reports will appear here once assessments are submitted.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if officer_reports %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Performance Distribution Chart
+const ctx = document.getElementById('performanceChart').getContext('2d');
+const categoryData = {
+    labels: [{% for category in categories %}'{{ category.name }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [
+        {% for report in officer_reports %}
+        {
+            label: '{{ report.officer.name }}',
+            data: [{% for category in categories %}{{ report.category_averages[category.id] or 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: 'rgba({{ loop.index * 50 % 255 }}, {{ loop.index * 80 % 255 }}, {{ loop.index * 120 % 255 }}, 0.2)',
+            borderColor: 'rgba({{ loop.index * 50 % 255 }}, {{ loop.index * 80 % 255 }}, {{ loop.index * 120 % 255 }}, 1)',
+            borderWidth: 2,
+            fill: false
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+};
+
+const performanceChart = new Chart(ctx, {
+    type: 'radar',
+    data: categoryData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            r: {
+                beginAtZero: true,
+                max: 5,
+                stepSize: 1,
+                ticks: {
+                    display: true
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

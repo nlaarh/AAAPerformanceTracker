@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}View Assessment{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Assessment Review</h2>
+                    <p class="text-muted mb-0">{{ assessment.reviewer.name }}'s evaluation of {{ assessment.officer.name }}</p>
+                </div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Assessment Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Officer</h6>
+                            <p class="mb-0">{{ assessment.officer.name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Reviewer</h6>
+                            <p class="mb-0">{{ assessment.reviewer.name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Overall Rating</h6>
+                            <p class="mb-0">
+                                <span class="badge {% if assessment.overall_rating >= 4 %}bg-success{% elif assessment.overall_rating >= 3 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                    {{ "%.1f"|format(assessment.overall_rating) }}/5.0
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="fw-bold text-muted">Submitted</h6>
+                            <p class="mb-0">{{ assessment.submitted_at.strftime('%B %d, %Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Question Responses by Category -->
+    {% if categories_data %}
+    {% for category_id, category_data in categories_data.items() %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">{{ category_data.category.name }}</h5>
+                    <small class="text-muted">{{ category_data.category.description }}</small>
+                </div>
+                <div class="card-body">
+                    {% for response in category_data.responses %}
+                    <div class="question-block mb-4 p-3 border rounded">
+                        <h6 class="fw-bold mb-3">{{ response.question.text }}</h6>
+                        
+                        {% if response.question.question_type == 'rating' and response.response_rating %}
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-primary me-2 fs-6">{{ response.response_rating }}/{{ response.question.max_rating }}</span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ (response.response_rating / response.question.max_rating * 100)|round }}%"
+                                             aria-valuenow="{{ response.response_rating }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="{{ response.question.max_rating }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif response.response_text %}
+                            <div class="mb-3">
+                                <div class="bg-light p-3 rounded">
+                                    <strong>Response:</strong><br>
+                                    {{ response.response_text }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if response.comment %}
+                        <div class="mb-2">
+                            <div class="bg-light p-3 rounded">
+                                <strong>Comments:</strong><br>
+                                {{ response.comment }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    
+    <!-- Self-Assessment Feedback (if available and viewing own assessment) -->
+    {% if assessment.officer_id == current_user.id and (assessment.accomplishments or assessment.improvement_opportunities or assessment.focus_for_next_year) %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Self-Assessment Feedback
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assessment.accomplishments %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-success">Key Accomplishments</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ assessment.accomplishments }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if assessment.improvement_opportunities %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-warning">Areas for Improvement</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ assessment.improvement_opportunities }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if assessment.focus_for_next_year %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-info">Focus for Next Year</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ assessment.focus_for_next_year }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- No Data State -->
+    {% if not categories_data %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5>No Assessment Data</h5>
+                    <p class="text-muted">This assessment does not contain any question responses.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

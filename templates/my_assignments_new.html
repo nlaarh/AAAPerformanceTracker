@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}My Tasks - AAA Performance Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">My Tasks</h1>
+                <span class="text-muted">Review assignments and completed evaluations</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card modern-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-clock text-warning fa-2x"></i>
+                    </div>
+                    <h3 class="stat-number text-warning">{{ assignments|selectattr('is_available')|list|length }}</h3>
+                    <p class="stat-label mb-0">PENDING</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card modern-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-check-circle text-success fa-2x"></i>
+                    </div>
+                    <h3 class="stat-number text-success">{{ assignments|selectattr('is_completed')|list|length }}</h3>
+                    <p class="stat-label mb-0">COMPLETED</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card modern-card h-100">
+                <div class="card-body text-center">
+                    <div class="stat-icon mb-3">
+                        <i class="fas fa-chart-line text-info fa-2x"></i>
+                    </div>
+                    <h3 class="stat-number text-info">{{ completion_rate }}%</h3>
+                    <p class="stat-label mb-0">COMPLETION RATE</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Assignments Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2"></i>All Assignments
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>OFFICER</th>
+                                    <th>ASSESSMENT PROJECT</th>
+                                    <th>STATUS</th>
+                                    <th>CREATED DATE</th>
+                                    <th>COMPLETED DATE</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar me-3">
+                                                {{ assignment.officer.name[0]|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-medium">{{ assignment.officer.name }}</div>
+                                                <small class="text-muted">{{ assignment.officer.role.replace('_', ' ').title() }}</small>
+                                                {% if assignment.is_self_assessment %}
+                                                <span class="badge bg-success ms-1">Self-Assessment</span>
+                                                {% else %}
+                                                <span class="badge bg-info ms-1">{{ assignment.reviewer.name }} reviewing {{ assignment.officer.name }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="fw-medium">{{ assignment.period.name }}</div>
+                                            <small class="text-muted">{{ assignment.period.start_date.strftime('%m/%d/%Y') }} - {{ assignment.period.end_date.strftime('%m/%d/%Y') }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if assignment.is_completed %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif assignment.is_submitted and not assignment.is_admin_approved %}
+                                            <span class="badge bg-warning">Awaiting Approval</span>
+                                        {% elif assignment.has_draft %}
+                                            <span class="badge bg-info">Draft Saved</span>
+                                        {% elif assignment.is_available %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Not Available</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.created_at %}
+                                            {{ assignment.created_at.strftime('%m/%d/%Y') }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.completed_at %}
+                                            {{ assignment.completed_at.strftime('%m/%d/%Y') }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if assignment.is_available %}
+                                            {% if assignment.has_draft %}
+                                                <a href="{{ url_for('evaluate_officer', officer_id=assignment.officer.id) }}?period_id={{ assignment.period.id }}" 
+                                                   class="btn btn-sm btn-warning me-1" title="Continue editing">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-success" 
+                                                        onclick="submitAssessment({{ assignment.id }})" 
+                                                        title="Submit assessment">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                            {% else %}
+                                                <a href="{{ url_for('evaluate_officer', officer_id=assignment.officer.id) }}?period_id={{ assignment.period.id }}" 
+                                                   class="btn btn-sm btn-primary" title="Start assessment">
+                                                    <i class="fas fa-play"></i>
+                                                </a>
+                                            {% endif %}
+                                        {% elif assignment.is_completed or assignment.is_submitted %}
+                                            <a href="{{ url_for('view_assessment_new', assignment_id=assignment.id) }}" 
+                                               class="btn btn-sm btn-outline-info" title="View assessment">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if assignments|length == 0 %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p>No assignments found</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitAssessment(assignmentId) {
+    if (confirm('Are you sure you want to submit this assessment? This action cannot be undone.')) {
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/submit_assessment';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'assignment_id';
+        input.value = assignmentId;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<style>
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+}
+
+.modern-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.15s ease;
+}
+
+.modern-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.stat-icon {
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

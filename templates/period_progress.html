@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}360° Review Progress - {{ period.name }}{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+<div class="container-fluid px-4 py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h1>
+                            <i class="fas fa-chart-line me-3 text-accent"></i>360° Review Progress
+                        </h1>
+                        <p>{{ period.name }}</p>
+                        <div class="d-flex align-items-center gap-3 mt-2">
+                            <span class="badge-rating clean-badge">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                {{ period.start_date.strftime('%B %d, %Y') }} - {{ period.end_date.strftime('%B %d, %Y') }}
+                            </span>
+                            {% if period.completion_rate %}
+                            <span class="badge-{% if period.completion_rate >= 80 %}active{% elif period.completion_rate >= 50 %}essay{% else %}inactive{% endif %} clean-badge">
+                                {{ period.completion_rate }}% Complete
+                            </span>
+                            {% endif %}
+                            {% if days_remaining >= 0 %}
+                            <span class="badge-rating clean-badge">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ days_remaining }} days remaining
+                            </span>
+                            {% else %}
+                            <span class="badge-inactive clean-badge">
+                                <i class="fas fa-times me-1"></i>
+                                Period ended {{ days_remaining|abs }} days ago
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if assignments | selectattr('is_completed', 'equalto', false) | list | length > 0 %}
+                        <a href="{{ url_for('send_reminders', period_id=period.id) }}" class="btn-clean-secondary clean-btn">
+                            <i class="fas fa-bell"></i>Send Reminders
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('manage_assignments', period_id=period.id) }}" class="btn-clean-primary clean-btn">
+                            <i class="fas fa-users-cog"></i>Manage Assignments
+                        </a>
+                        <a href="{{ url_for('assessment_periods') }}" class="btn-clean-light clean-btn">
+                            <i class="fas fa-arrow-left"></i>Back to Periods
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Statistics -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-users fa-2x text-primary mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ officer_progress|length }}</h3>
+                    <p class="text-muted mb-0">Officers Being Reviewed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-clipboard-list fa-2x text-info mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ assignments|length }}</h3>
+                    <p class="text-muted mb-0">Total Reviews</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ assignments | selectattr('is_completed', 'equalto', true) | list | length }}</h3>
+                    <p class="text-muted mb-0">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="modern-card text-center">
+                <div class="p-4">
+                    <i class="fas fa-clock fa-2x text-warning mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ assignments | selectattr('is_completed', 'equalto', false) | list | length }}</h3>
+                    <p class="text-muted mb-0">Pending</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Progress -->
+    {% if assignments|length > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-chart-bar me-2"></i>Overall Completion Progress
+                    </h4>
+                    <p>Track the completion rate across all review assignments</p>
+                </div>
+                <div class="p-4">
+                    <div class="progress mb-3" style="height: 12px;">
+                        <div class="progress-bar bg-{% if period.completion_rate >= 80 %}success{% elif period.completion_rate >= 50 %}warning{% else %}danger{% endif %}" 
+                             style="width: {{ period.completion_rate }}%">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">{{ period.completion_rate }}% Complete</h5>
+                            <small class="text-muted">
+                                {{ assignments | selectattr('is_completed', 'equalto', true) | list | length }} of {{ assignments|length }} reviews completed
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            {% if period.completion_rate >= 80 %}
+                                <span class="badge-active clean-badge">On Track</span>
+                            {% elif period.completion_rate >= 50 %}
+                                <span class="badge-essay clean-badge">In Progress</span>
+                            {% else %}
+                                <span class="badge-inactive clean-badge">Needs Attention</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Officer Progress Details -->
+    {% if officer_progress %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-user-check me-2"></i>Progress by Officer
+                    </h4>
+                    <p>Detailed breakdown of review completion for each officer</p>
+                </div>
+                <div class="p-0">
+                    <div class="officer-progress-list">
+                        {% for officer_id, progress in officer_progress.items() %}
+                        <div class="officer-progress-item">
+                            <div class="row align-items-center">
+                                <div class="col-lg-3 col-md-4 mb-3 mb-md-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user text-primary me-3 fa-lg"></i>
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">{{ progress.officer.name }}</h6>
+                                            <small class="text-muted">{{ progress.officer.email }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-4 mb-3 mb-md-0">
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar bg-{% if progress.completion_rate >= 80 %}success{% elif progress.completion_rate >= 50 %}warning{% else %}danger{% endif %}" 
+                                             style="width: {{ progress.completion_rate }}%">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ progress.completed_reviews }}/{{ progress.total_reviewers }} reviews</small>
+                                        <small class="fw-bold">{{ progress.completion_rate }}%</small>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-md-4">
+                                    <div class="reviewers-status">
+                                        {% if progress.completed_reviewers %}
+                                        <div class="mb-2">
+                                            <small class="text-success fw-bold">Completed by:</small>
+                                            <div class="reviewer-badges">
+                                                {% for reviewer in progress.completed_reviewers %}
+                                                <span class="badge-active clean-badge">
+                                                    <i class="fas fa-check me-1"></i>{{ reviewer.name.split()[0] }}
+                                                </span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if progress.pending_reviewers %}
+                                        <div>
+                                            <small class="text-warning fw-bold">Pending from:</small>
+                                            <div class="reviewer-badges">
+                                                {% for reviewer in progress.pending_reviewers %}
+                                                <span class="badge-essay clean-badge">
+                                                    <i class="fas fa-clock me-1"></i>{{ reviewer.name.split()[0] }}
+                                                </span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not assignments %}
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>No Review Assignments</h3>
+                    <p>There are no review assignments for this assessment project yet.</p>
+                    <a href="{{ url_for('manage_assignments', period_id=period.id) }}" class="btn-clean-primary clean-btn">
+                        <i class="fas fa-users-cog"></i>Create Assignments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Time Status -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-header">
+                    <h4>
+                        <i class="fas fa-clock me-2"></i>Assessment Project Timeline
+                    </h4>
+                    <p>Important dates and deadlines for this review period</p>
+                </div>
+                <div class="p-4">
+                    <div class="timeline-status">
+                        {% if days_remaining > 0 %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-play-circle text-success fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1 text-success">Assessment Project Active</h6>
+                                    <p class="mb-0">
+                                        <strong>{{ days_remaining }} days remaining</strong> until the assessment project ends.
+                                        {% if assignments | selectattr('is_completed', 'equalto', false) | list | length > 0 %}
+                                        Consider sending reminder emails to reviewers with pending assessments.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        {% elif days_remaining == 0 %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle text-warning fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1 text-warning">Assessment Project Ends Today!</h6>
+                                    <p class="mb-0">All pending assessments should be completed today.</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-stop-circle text-danger fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1 text-danger">Assessment Project Ended</h6>
+                                    <p class="mb-0">
+                                        This period ended <strong>{{ days_remaining|abs }} days ago</strong>. 
+                                        No new assessments can be submitted.
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<style>
+.officer-progress-list {
+    background: #f8f9fa;
+}
+
+.officer-progress-item {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e9ecef;
+    background: white;
+    margin: 0;
+}
+
+.officer-progress-item:last-child {
+    border-bottom: none;
+}
+
+.officer-progress-item:hover {
+    background: #f8f9fa;
+}
+
+.reviewers-status {
+    min-height: 40px;
+}
+
+.reviewer-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.reviewer-badges .clean-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+}
+
+.timeline-status {
+    padding: 20px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh every 5 minutes if the page is visible
+    setInterval(function() {
+        if (document.visibilityState === 'visible') {
+            location.reload();
+        }
+    }, 300000); // 5 minutes
+});
+</script>
+{% endblock %}

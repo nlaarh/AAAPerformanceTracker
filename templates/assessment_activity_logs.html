@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment Activity Logs{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-history me-2"></i>Assessment Activity Logs</h2>
+                    <p class="text-muted">Comprehensive tracking of all assessment workflow activities</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_main') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Admin
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Activities</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="period_id" class="form-label">Assessment Project</label>
+                            <select class="form-select" id="period_id" name="period_id">
+                                <option value="">All Projects</option>
+                                {% for period in periods %}
+                                <option value="{{ period.id }}" {% if period.id == selected_period %}selected{% endif %}>
+                                    {{ period.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="user_id" class="form-label">User</label>
+                            <select class="form-select" id="user_id" name="user_id">
+                                <option value="">All Users</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if user.id == selected_user %}selected{% endif %}>
+                                    {{ user.name }} ({{ user.role.replace('_', ' ').title() }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="event_type" class="form-label">Event Type</label>
+                            <select class="form-select" id="event_type" name="event_type">
+                                <option value="">All Events</option>
+                                {% for event in event_types %}
+                                <option value="{{ event }}" {% if event == selected_event_type %}selected{% endif %}>
+                                    {{ event.replace('_', ' ').title() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>Filter
+                                </button>
+                                <a href="{{ url_for('assessment_activity_logs') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Activity Logs -->
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Activity Timeline</h5>
+                    <span class="badge bg-info">{{ logs.total }} Activities</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if logs.items %}
+                    <div class="timeline">
+                        {% for log in logs.items %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker 
+                                {% if log.action == 'view_officer_reviews' %}bg-info
+                                {% elif log.action in ['assignment_created', 'assignment_updated'] %}bg-warning
+                                {% elif log.action in ['submit_assessment', 'approve_assessment'] %}bg-primary
+                                {% elif log.action in ['approve_reviewer_assessment'] %}bg-success
+                                {% elif log.action in ['create_assessment'] %}bg-purple
+                                {% elif log.action in ['view_assessment'] %}bg-dark
+                                {% else %}bg-secondary{% endif %}">
+                                <i class="fas fa-
+                                    {% if log.action == 'view_officer_reviews' %}table
+                                    {% elif log.action in ['assignment_created', 'assignment_updated'] %}users
+                                    {% elif log.action == 'submit_assessment' %}paper-plane
+                                    {% elif log.action in ['approve_assessment', 'approve_reviewer_assessment'] %}check
+                                    {% elif log.action == 'create_assessment' %}plus
+                                    {% elif log.action == 'view_assessment' %}eye
+                                    {% else %}circle{% endif %}"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <h6 class="mb-1">{{ log.action.replace('_', ' ').title() }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ log.timestamp.strftime('%b %d, %Y at %I:%M %p') }}
+                                    </small>
+                                </div>
+                                <div class="timeline-body">
+                                    {% if log.description %}
+                                    <p class="mb-2">{{ log.description }}</p>
+                                    {% endif %}
+                                    <div class="row text-sm">
+                                        <div class="col-md-6">
+                                            <strong>User:</strong> {{ log.user.name if log.user else 'System' }}
+                                        </div>
+                                        {% if log.ip_address %}
+                                        <div class="col-md-6">
+                                            <strong>IP:</strong> {{ log.ip_address }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Activity Logs Found</h5>
+                        <p class="text-muted">Try adjusting your filter criteria to see more activities.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    padding-bottom: 30px;
+    border-left: 2px solid #e9ecef;
+    margin-left: 20px;
+}
+
+.timeline-item:last-child {
+    border-left: none;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -21px;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-content {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.timeline-header h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.timeline-body {
+    color: #6c757d;
+}
+
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+pre {
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}
